@@ -138,6 +138,14 @@ export const LINES = {
       burrow: ['Who is down that hole? Tap the hole!', 'Who lives in this hole? Tap it!'],
     } satisfies Record<SpotKind, string[]>,
     nudge: [`Let's go and look!`, `Come on, ${DOG}!`],
+    // The 3D game, where she steers Kipper herself.
+    find: {
+      bush: ['Who is hiding in that bush? Run over and see!', 'The bush is wiggling! Run over to it!'],
+      log: ['Who is hiding behind that log? Run over and see!', 'Something is behind the log! Run over to it!'],
+      burrow: ['Who is down that hole? Run over and see!', 'Who lives in that hole? Run over to it!'],
+    } satisfies Record<SpotKind, string[]>,
+    thisWay: `This way, ${DOG}! Let's go and look.`,
+    runHome: `${DOG} has found all his toys! Run back to his basket.`,
     question: (w: Word) => `${cap(w.word)}! Which letter does ${w.word} start with?`,
     again: (w: Word) => `Which letter does ${w.word} start with?`,
     hint: (w: Word) => `Listen. ${cap(stretch(w))}! Which letter makes that sound?`,
@@ -177,7 +185,7 @@ export function catalogue(): [Speaker, string][] {
   const n = LINES.narrator
   const out: [Speaker, string][] = []
   const add = (s: Speaker, ...lines: string[]) => lines.forEach((l) => out.push([s, l]))
-  add('narrator', n.missing, n.toyList, n.letsGo, ...Object.values(n.peek).flat(), ...n.nudge)
+  add('narrator', n.missing, n.toyList, n.letsGo, ...Object.values(n.peek).flat(), ...n.nudge, ...Object.values(n.find).flat(), n.thisWay, n.runHome)
   for (const w of ALL_WORDS) add('narrator', n.question(w), n.again(w), n.hint(w), ...n.right(w), n.word(w))
   for (const l of ALL_LETTERS) add('narrator', n.wrong(l))
   add('narrator', n.yes, n.thatOneSays, n.tryAgain, n.homeTime, n.tapBasket, n.hooray, n.bBonus, n.sleepy, n.night)

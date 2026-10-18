@@ -81,6 +81,14 @@ export const sfx = {
   tada: safe(() => [392, 523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, i * 0.11, 0.42, 'triangle', 0.2))),
   /** A note from a pentatonic scale, so tapping flowers always sounds nice together. */
   note: (i: number) => safe(() => tone([523, 587, 659, 784, 880, 1047, 1175, 1319][((i % 8) + 8) % 8], 0, 0.6, 'sine', 0.22))(),
+  /** A cartoon woof: a falling growl of a tone under a puff of noise, twice. */
+  bark: safe(() => {
+    for (const at of [0, 0.2]) {
+      tone(330, at, 0.16, 'sawtooth', 0.12, 170)
+      tone(220, at, 0.18, 'triangle', 0.22, 140)
+      noise(at, 0.12, 900, 0.18, 1.5)
+    }
+  }),
   plop: safe(() => {
     tone(700, 0, 0.16, 'sine', 0.3, 180)
     noise(0.02, 0.18, 1400, 0.08, 1)

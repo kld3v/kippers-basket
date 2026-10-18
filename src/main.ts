@@ -51,7 +51,7 @@ const host: StageHost = {
 }
 
 /** The 3D meadow is only downloaded when it's chosen, so the storybook starts fast. */
-async function useStage(next: Mode): Promise<Stage> {
+async function loadStage(next: Mode): Promise<Stage> {
   if (stage && mode === next) return stage
   stage?.dispose()
   stage = null
@@ -69,7 +69,7 @@ async function start(next: Mode, script: Script = game) {
   speech.stop()
   const r = (run = new Run())
   shell.scenePhase('play')
-  const s = await useStage(next)
+  const s = await loadStage(next)
   if (r.cancelled) return
   s.reset()
   shell.night(false)
@@ -135,7 +135,7 @@ const debugScene = params.get('scene')
 if (debugScene === 'question') void start(firstMode, questionLoop)
 else if (debugScene === 'ending') void start(firstMode, endingOnly)
 else if (debugScene === 'play') void start(firstMode)
-else void useStage(firstMode)
+else void loadStage(firstMode)
 
 if (params.has('debug')) Object.assign(window, { __kb: { shell, speech, start, get stage() { return stage }, get settings() { return settings } } })
 

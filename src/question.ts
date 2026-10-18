@@ -96,10 +96,12 @@ export function ask(run: Run, root: HTMLElement, q: Question, settings: Settings
         }, 9000)
       }
 
+      let unkey = () => {}
       const finish = () => {
         done = true
         clearTimeout(idle)
         timers.forEach(clearTimeout)
+        unkey()
       }
 
       const choose = async (tile: HTMLButtonElement) => {
@@ -131,6 +133,14 @@ export function ask(run: Run, root: HTMLElement, q: Question, settings: Settings
           e.preventDefault()
           void choose(t)
         })
+      // On a keyboard, pressing the letter answers.
+      const key = (e: KeyboardEvent) => {
+        if (e.metaKey || e.ctrlKey || document.querySelector('dialog[open]')) return
+        const tile = tiles.find((t) => t.dataset.letter === e.key.toLowerCase())
+        if (tile) void choose(tile)
+      }
+      addEventListener('keydown', key)
+      unkey = () => removeEventListener('keydown', key)
       cardEl.addEventListener('pointerdown', () => {
         if (done) return
         void wiggle(cardEl.querySelector('.pic')!)

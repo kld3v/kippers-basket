@@ -904,10 +904,134 @@ svg {
   }
 }
 
-/* The 3D meadow's canvas sits where the storybook's strips would */
-.meadow-stage {
+/* The 3D game: canvas, thumb joystick, jump and woof buttons, the arrow to the star, snores */
+.meadow-stage,
+.meadow-canvas {
   position: absolute;
   inset: 0;
+}
+.pad {
+  display: none;
+}
+@media (pointer: coarse) {
+  #game[data-scene='play'] .pad.on {
+    display: block;
+  }
+}
+.joy {
+  position: fixed;
+  width: 120px;
+  height: 120px;
+  margin: -60px 0 0 -60px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  border: 3px solid rgba(61, 52, 49, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 15;
+}
+.joy.on {
+  opacity: 1;
+}
+.joy i {
+  position: absolute;
+  left: 35px;
+  top: 35px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #fffaf0;
+  border: 3px solid var(--ink);
+}
+.pad-jump,
+.pad-bark {
+  position: fixed;
+  right: calc(18px + env(safe-area-inset-right));
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: #fffaf0;
+  border: 3px solid var(--ink);
+  z-index: 15;
+}
+.pad-jump {
+  bottom: calc(24px + env(safe-area-inset-bottom));
+}
+.pad-bark {
+  bottom: calc(124px + env(safe-area-inset-bottom));
+  right: calc(36px + env(safe-area-inset-right));
+  width: 64px;
+  height: 64px;
+}
+.pad svg,
+.compass svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pad-bark svg {
+  fill: var(--ink);
+  stroke: none;
+}
+.compass {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 54px;
+  height: 54px;
+  margin: -27px 0 0 -27px;
+  border-radius: 50%;
+  background: #f4cf62;
+  border: 3px solid var(--ink);
+  padding: 6px;
+  z-index: 14;
+  pointer-events: none;
+}
+.keys-hint {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--u) * 4);
+  translate: -50% 0;
+  padding: 0.4em 1em;
+  border-radius: 1em;
+  background: rgba(255, 250, 240, 0.9);
+  font-size: 15px;
+  opacity: 0;
+  transition: opacity 0.5s;
+  pointer-events: none;
+  z-index: 13;
+}
+.keys-hint.on {
+  opacity: 1;
+}
+@media (pointer: coarse) {
+  .keys-hint {
+    display: none;
+  }
+}
+.zzz3d {
+  position: fixed;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  z-index: 12;
+}
+.zzz3d span {
+  position: absolute;
+  font-weight: 700;
+  font-size: calc(var(--u) * 6);
+  color: #fff;
+  animation: zzz 2.6s ease-out infinite;
+}
+.zzz3d span:nth-child(2) {
+  animation-delay: 0.9s;
+}
+.zzz3d span:nth-child(3) {
+  animation-delay: 1.8s;
 }
 #game[data-loading] .modes {
   opacity: 0.4;

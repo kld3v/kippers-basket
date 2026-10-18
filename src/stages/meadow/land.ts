@@ -198,7 +198,7 @@ export function terrain() {
         float dh = vPos.y - uPondLevel;
         col = mix(col, vec3(0.58, 0.50, 0.38), smoothstep(0.14, 0.0, dh) * 0.55 * nearPond);
         col = mix(col, vec3(0.24, 0.20, 0.19), smoothstep(0.04, 0.0, abs(dh)) * 0.85 * nearPond);
-        gl_FragColor = vec4(mix(col, uFog, smoothstep(uFogNear, uFogFar, vDist)), 1.0);
+        gl_FragColor = vec4(mix(pow(col, vec3(2.2)), uFog, smoothstep(uFogNear, uFogFar, vDist)), 1.0);
       }`,
   })
   return { geo, mat }
@@ -253,7 +253,7 @@ export function pathRibbon() {
         vec3 col = mix(vec3(0.937, 0.863, 0.698), vec3(0.83, 0.77, 0.66), peb);
         col = mix(col, vec3(0.92, 0.84, 0.66), noise(vUv * vec2(0.6, 2.0)) * 0.4);
         col = mix(col, vec3(0.24, 0.20, 0.19), ink * 0.7);
-        gl_FragColor = vec4(mix(col, uFog, smoothstep(uFogNear, uFogFar, vDist)), 1.0);
+        gl_FragColor = vec4(mix(pow(col, vec3(2.2)), uFog, smoothstep(uFogNear, uFogFar, vDist)), 1.0);
       }`,
   })
   return { geo, mat }
@@ -281,7 +281,7 @@ export function pond() {
         float d = distance(vPos.xz, uRipple.xy);
         float ring = age < 2.0 ? smoothstep(0.08, 0.0, abs(d - age * 1.4)) * (1.0 - age / 2.0) : 0.0;
         col = mix(col, vec3(1.0), ring * 0.8);
-        gl_FragColor = vec4(mix(col, uFog, smoothstep(uFogNear, uFogFar, vDist)), 1.0);
+        gl_FragColor = vec4(mix(pow(col, vec3(2.2)), uFog, smoothstep(uFogNear, uFogFar, vDist)), 1.0);
       }`,
   })
   return { geo, mat }

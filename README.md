@@ -5,7 +5,9 @@ A gentle phonics game for a two-year-old. Kipper's seven toys have gone missing.
 Two ways to play, chosen on the first screen:
 
 - **Story**: the original storybook. Kipper and Tiger trot along a path that scrolls past; tap the rustling bush to see who's hiding.
-- **3D**: the same drawings as paper cut-outs in a 3D meadow round a pond. Tap the sparkling hiding place and Kipper runs over; tap anywhere on the grass to wander. Flowers play notes, trees shake, butterflies flutter off, the pond ripples.
+- **3D**: you play Kipper, running round a 3D meadow with Tiger at your heel. The bush (or log, or burrow) with a golden star over it is where the next friend is hiding; run up to it and they pop out with a question. Flowers chime as you run through them, butterflies scatter, the pond splashes. If nobody steers for a while, Kipper trots over by himself.
+  - Keyboard: **WASD** or arrows to run, **Space** to jump, **B** to bark, drag (or Q/E) to look round, wheel to zoom. Press the letter to answer.
+  - iPad/phone: thumb joystick on the left, jump and woof buttons on the right, drag on the right to look round, or just tap the grass to run there.
 
 Nothing is ever marked wrong out loud. A wrong tile fades away with "That one says tuh. Try again!", so every round ends on a win. If she wanders off, the question is asked again, then the sound is given as a hint and the right tile wiggles.
 
@@ -54,15 +56,15 @@ Same as dune-game: `netlify deploy --prod` (it runs `npm run build`). Live at ht
 
 ## Developing
 
-- `/gallery.html` shows every drawing on one page. `/icon.html` draws the app icon (`public/icon*.png` were screenshotted from it).
+- `/gallery.html` shows every drawing, `/models.html?set=dogs|friends|toys|things` every 3D model. `/icon.html` draws the app icon.
 - URL switches: `?mode=meadow` for 3D, `?scene=play|question|ending` skips ahead, `?fast` speeds everything up, `?autoplay` answers by itself, `?captions` shows subtitles, `?debug` exposes `window.__kb`.
 
 ## How it's made
 
 - Vite + TypeScript, and no image files. Every picture is SVG drawn in code (`src/art/`) with a small seeded "ink and watercolour" kit (`src/art/ink.ts`): wobbly lines, colour washes that sit slightly off the line, and pen gaps.
-- One game script (`src/script.ts`) drives either stage: `src/stages/flat.ts` (the storybook, plain DOM) or `src/stages/meadow/` (React Three Fiber, loaded only when 3D is picked). The meadow rasterises the same SVGs onto paper cut-outs; Kipper and Tiger are jointed puppets. The land is real geometry, and an ink pass draws outlines where depth jumps (second difference of 1/z, so slopes don't smudge).
+- One game script (`src/script.ts`) drives either stage: `src/stages/flat.ts` (the storybook, plain DOM) or `src/stages/meadow/` (React Three Fiber, loaded only when 3D is picked). In 3D every character, toy and tree is built from simple shapes in code (`src/stages/meadow/models/`, see `/models.html`), toon-shaded in the storybook colours with ink outlines; an ink pass also draws lines wherever depth jumps (second difference of 1/z, so slopes don't smudge). `play.ts` is the game physics (steering relative to the camera, jumping, wading, Tiger following, the camera).
 - Speech plays the recorded MP3 for a line when there is one (`src/voice-manifest.json`), otherwise the browser's own voice. Sound effects are synthesised with Web Audio. A grown-up's own letter recordings live in IndexedDB on that device.
 - The words, friends and lines are all in `src/content.ts`.
-- Why paper cut-outs rather than Mixamo models: Mixamo only rigs humanoids (no dogs), and cut-outs keep the storybook look in 3D.
+- Why not Mixamo: it only rigs humanoids, so there are no dogs; Kipper, Tiger and Neddy are one parametric dog built in code.
 
 Kipper is Mick Inkpen's character and this is a home-made game for the family. The dog's name is one constant (`DOG` in `src/content.ts`) if it ever goes somewhere public.
