@@ -137,3 +137,90 @@ export function buildDog(look: DogLook): DogRig {
   root.scale.setScalar(look.size)
   return { root, body, legs, head, ears, tail, eyes, mouth, hip }
 }
+
+/** Kipper and Tiger stand and walk on their back legs, like on TV. */
+export interface BipedRig {
+  root: THREE.Group
+  /** Bobs, leans and sways as he runs. */
+  body: THREE.Group
+  /** Left and right, swinging from the hips. */
+  legs: THREE.Group[]
+  /** Left and right, swinging from the shoulders. */
+  arms: THREE.Group[]
+  head: THREE.Group
+  ears: THREE.Group[]
+  tail: THREE.Group
+  eyes: THREE.Group[]
+}
+
+export function buildBiped(look: DogLook): BipedRig {
+  const root = new THREE.Group()
+  const body = new THREE.Group()
+  root.add(body)
+  const chest = look.chest ?? look.body
+  const hip = 0.42
+
+  const legs = [-1, 1].map((side) => {
+    const g = new THREE.Group()
+    g.position.set(side * 0.14, hip, 0)
+    g.add(capsule(0.1, 0.24, look.body, [0, -0.2, 0]))
+    g.add(ball(0.13, chest === look.body ? look.body : chest, [0, -hip + 0.07, 0.07], [0.95, 0.6, 1.45]))
+    body.add(g)
+    return g
+  })
+
+  const torso = capsule(0.3, 0.34, look.body, [0, hip + 0.3, 0])
+  if (look.stripes) torso.material = toon(look.body, { map: stripeTexture(look.body, look.stripes), key: `stripes-${look.body}` })
+  body.add(torso)
+  body.add(ball(0.25, chest, [0, hip + 0.22, 0.12], [1, 1.15, 0.8], [0, 0, 0], false))
+
+  const arms = [-1, 1].map((side) => {
+    const g = new THREE.Group()
+    g.position.set(side * 0.29, hip + 0.56, 0.04)
+    g.rotation.z = side * 0.12
+    g.add(capsule(0.075, 0.26, look.body, [0, -0.17, 0]))
+    g.add(ball(0.095, chest === look.body ? look.body : chest, [0, -0.36, 0.02]))
+    body.add(g)
+    return g
+  })
+
+  const tail = new THREE.Group()
+  tail.position.set(0, hip + 0.1, -0.26)
+  tail.add(
+    tube(
+      [
+        [0, 0, 0.04],
+        [0, 0.08, -0.16],
+        [0, 0.28, -0.24],
+        [0, 0.44, -0.14],
+      ],
+      0.048,
+      look.stripes ?? look.body,
+    ),
+  )
+  tail.add(ball(0.05, look.body, [0, 0.44, -0.14]))
+  body.add(tail)
+
+  const head = new THREE.Group()
+  head.position.set(0, hip + 0.66, 0.04)
+  body.add(head)
+  head.add(ball(0.33, look.body, [0, 0.24, 0]))
+  head.add(ball(0.19, chest, [0, 0.13, 0.28], [1.05, 0.82, 1.18]))
+  head.add(dot(0.066, INK, [0, 0.19, 0.48], [1.1, 0.85, 0.9]))
+  const eyes = [-0.13, 0.13].map((x) => eye(0.048, [x, 0.33, 0.25]))
+  eyes.forEach((e) => head.add(e))
+  head.add(cheek(0.06, [-0.21, 0.14, 0.22], [0, -0.6, 0]))
+  head.add(cheek(0.06, [0.21, 0.14, 0.22], [0, 0.6, 0]))
+  if (look.stripes) for (const x of [-0.06, 0.06]) head.add(dot(0.04, look.stripes, [x, 0.53, 0.08], [0.6, 1.6, 0.6]))
+  const ears = [-1, 1].map((side) => {
+    const g = new THREE.Group()
+    g.position.set(side * 0.26, 0.44, -0.04)
+    g.rotation.z = side * 0.2
+    g.add(ball(1, look.ear, [side * 0.02, -look.earLen * 0.85, 0], [0.07, look.earLen * 1.1, 0.17]))
+    head.add(g)
+    return g
+  })
+
+  root.scale.setScalar(look.size)
+  return { root, body, legs, arms, head, ears, tail, eyes }
+}

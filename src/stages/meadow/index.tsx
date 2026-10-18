@@ -96,6 +96,21 @@ class MeadowStage implements Stage {
     setTimeout(() => void this.hop(this.play.tiger), 150)
   }
 
+  celebrate(r: Round) {
+    const p = this.play
+    const bounce = (b: (typeof p)['kipper'], delay: number) =>
+      setTimeout(() => void p.tweens.run(950, (k) => (b.lift = Math.abs(Math.sin(k * Math.PI * 2)) * 0.75), ease.linear), delay)
+    bounce(p.kipper, 0)
+    bounce(p.tiger, 160)
+    // Kipper spins round once for joy.
+    const h = p.kipper.heading
+    void p.tweens.run(800, (k) => (p.kipper.heading = h + k * Math.PI * 2))
+    const s = p.spots[r.index]
+    void p.tweens.run(950, (k) => (s.squash = Math.sin(k * Math.PI * 4) * (1 - k)), ease.linear)
+    p.spawn(p.kipper.pos.clone().setY(p.kipper.pos.y + 1), 'sparkle', 18)
+    p.spawn(s.friendPos.clone().setY(s.friendPos.y + 0.8), 'sparkle', 12)
+  }
+
   /** Let her run about until Kipper reaches `at`; if nobody steers for a while he goes by himself. */
   private reach(run: Run, at: THREE.Vector3, radius: number, prompt: string) {
     const p = this.play

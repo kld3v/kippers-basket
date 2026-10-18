@@ -88,3 +88,50 @@ export function wiggle(el: Element, ms = 500) {
     { duration: ms, easing: 'ease-in-out' },
   ).finished
 }
+
+const CONFETTI = [P.red, P.yellow, P.blue, P.pink, P.green, P.orange, P.purple]
+
+/**
+ * The big "you got it!" moment: confetti tumbling over the whole screen and a giant star
+ * with the letter on it, popping up in the middle.
+ */
+export function celebrate(letter: string) {
+  const w = layer.clientWidth
+  const h = layer.clientHeight
+  for (let i = 0; i < 56; i++) {
+    const c = document.createElement('div')
+    const size = 8 + Math.random() * 10
+    c.className = 'confetti'
+    c.style.cssText = `left:${Math.random() * w}px;top:${-30 - Math.random() * 120}px;width:${size}px;height:${size * (i % 3 ? 0.55 : 1)}px;background:${CONFETTI[i % CONFETTI.length]};border-radius:${i % 3 ? 2 : 50}%`
+    layer.append(c)
+    const drift = (Math.random() - 0.5) * 200
+    c.animate(
+      [
+        { transform: 'translate(0,0) rotate(0deg)', opacity: 1 },
+        { transform: `translate(${drift * 0.5}px,${h * 0.55}px) rotate(${360 + Math.random() * 360}deg)`, opacity: 1, offset: 0.6 },
+        { transform: `translate(${drift}px,${h + 160}px) rotate(${720 + Math.random() * 360}deg)`, opacity: 0.9 },
+      ],
+      { duration: 2200 + Math.random() * 1400, delay: Math.random() * 350, easing: 'cubic-bezier(.25,.6,.5,1)', fill: 'backwards' },
+    ).finished.then(() => c.remove())
+  }
+  const star = document.createElement('div')
+  star.className = 'big-star'
+  star.innerHTML = STARS[0]
+  const glyph = document.createElement('span')
+  glyph.textContent = letter
+  star.append(glyph)
+  layer.append(star)
+  star
+    .animate(
+      [
+        { transform: 'translate(-50%,-50%) scale(0) rotate(-40deg)', opacity: 1 },
+        { transform: 'translate(-50%,-50%) scale(1.18) rotate(8deg)', opacity: 1, offset: 0.18 },
+        { transform: 'translate(-50%,-50%) scale(1) rotate(-4deg)', opacity: 1, offset: 0.3 },
+        { transform: 'translate(-50%,-50%) scale(1.05) rotate(4deg)', opacity: 1, offset: 0.55 },
+        { transform: 'translate(-50%,-50%) scale(1) rotate(-2deg)', opacity: 1, offset: 0.8 },
+        { transform: 'translate(-50%,-50%) scale(0) rotate(30deg)', opacity: 0 },
+      ],
+      { duration: 2100, easing: 'ease-in-out' },
+    )
+    .finished.then(() => star.remove())
+}

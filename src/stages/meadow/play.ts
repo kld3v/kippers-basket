@@ -278,7 +278,8 @@ export class Play {
     k.pos.addScaledVector(k.vel, dt)
     k.speed = Math.hypot(k.vel.x, k.vel.z)
     if (k.speed > 0.3) k.heading = lerpAngle(k.heading, Math.atan2(k.vel.x, k.vel.z), 1 - Math.exp(-dt * 12))
-    this.collide(k)
+    // Bumping into things only matters while she steers; scripted moves (into the basket) go where they're sent.
+    if (free) this.collide(k)
 
     // Jumping, and landing back on the grass (or in the pond).
     if (free && inp.jump && k.lift <= 0.001) {

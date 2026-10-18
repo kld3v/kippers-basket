@@ -22,7 +22,7 @@
   --u: min(1vh, 0.95vw);
   --q: min(1vh, 0.68vw);
   --gap: calc(var(--u) * 7);
-  --buddy: calc(var(--u) * 20);
+  --buddy: calc(var(--u) * 17);
   color-scheme: light;
 }
 @supports (height: 1dvh) {
@@ -35,7 +35,7 @@
   :root {
     --q: min(0.8vh, 1.4vw);
     --gap: calc(var(--u) * 1);
-    --buddy: calc(var(--u) * 9);
+    --buddy: calc(var(--u) * 8);
   }
   @supports (height: 1dvh) {
     :root {
@@ -210,18 +210,18 @@ svg {
 }
 .kipper-slot {
   position: absolute;
-  bottom: calc(var(--u) * 9.7);
-  left: calc(50% - var(--gap) - var(--u) * 42.5);
-  width: calc(var(--u) * 42.5);
-  height: calc(var(--u) * 36);
+  bottom: calc(var(--u) * 9.6);
+  left: calc(50% - var(--gap) - var(--u) * 37.2);
+  width: calc(var(--u) * 37.2);
+  height: calc(var(--u) * 44);
   z-index: 4;
 }
 .tiger-slot {
   position: absolute;
-  bottom: calc(var(--u) * 12.6);
-  left: calc(50% - var(--gap) - var(--u) * 42.5 - var(--buddy));
-  width: calc(var(--u) * 37);
-  height: calc(var(--u) * 31.3);
+  bottom: calc(var(--u) * 12.4);
+  left: calc(50% - var(--gap) - var(--u) * 37.2 - var(--buddy));
+  width: calc(var(--u) * 34);
+  height: calc(var(--u) * 40.2);
   z-index: 3;
 }
 .tiger-bed {
@@ -1036,4 +1036,35 @@ svg {
 #game[data-loading] .modes {
   opacity: 0.4;
   pointer-events: none;
+}
+
+/* The big right-answer moment */
+.confetti {
+  position: absolute;
+}
+.big-star {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: calc(var(--q) * 34);
+  height: calc(var(--q) * 34);
+  display: grid;
+  place-items: center;
+}
+.big-star svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.big-star span {
+  position: relative;
+  font-weight: 700;
+  font-size: calc(var(--q) * 13);
+  margin-top: calc(var(--q) * 1.5);
+}
+@media (hover: hover) {
+  .question.on .tile:not(.wrong):hover {
+    translate: 0 -5%;
+  }
 }

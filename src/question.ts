@@ -4,7 +4,7 @@ import { hasClip } from './audio/clips'
 import { sfx } from './audio/sfx'
 import { speech, type Part } from './audio/speech'
 import { LINES, pick } from './content'
-import { burst, centre, wiggle } from './fx'
+import { burst, celebrate, centre, wiggle } from './fx'
 import type { Question } from './questions'
 import { sleep, type Run } from './run'
 import type { Settings } from './settings'
@@ -24,7 +24,7 @@ export const questionLines = (q: Question) => [N.question(q.word), N.again(q.wor
  * The narrator asks every question, so the phonics always comes in the same clear voice.
  * Resolves true if she got it first time.
  */
-export function ask(run: Run, root: HTMLElement, q: Question, settings: Settings) {
+export function ask(run: Run, root: HTMLElement, q: Question, settings: Settings, onRight: () => void = () => {}) {
   const word = q.word.word
   root.replaceChildren()
   root.dataset.n = String(q.choices.length)
@@ -112,9 +112,12 @@ export function ask(run: Run, root: HTMLElement, q: Question, settings: Settings
           finish()
           tile.classList.add('right')
           root.classList.add('answered')
-          sfx.chime()
+          sfx.tada()
+          sfx.sparkle()
           const [x, y] = centre(tile.getBoundingClientRect())
-          burst(x, y)
+          burst(x, y, 22, 230)
+          celebrate(settings.letterCase === 'upper' ? letter.toUpperCase() : letter)
+          onRight()
           await talk(lines.right())
           await sleep(250)
           root.classList.remove('on', 'answered')
@@ -132,6 +135,12 @@ export function ask(run: Run, root: HTMLElement, q: Question, settings: Settings
         t.addEventListener('pointerdown', (e) => {
           e.preventDefault()
           void choose(t)
+        })
+      // With a mouse, pointing at a letter says its sound.
+      for (const t of tiles)
+        t.addEventListener('pointerenter', (e) => {
+          if (e.pointerType !== 'mouse' || done || t.classList.contains('wrong')) return
+          void talk([{ sound: t.dataset.letter! }])
         })
       // On a keyboard, pressing the letter answers.
       const key = (e: KeyboardEvent) => {

@@ -5,7 +5,7 @@ import { createRoot } from 'react-dom/client'
 import * as THREE from 'three'
 import { FRIENDS, TOYS } from './content'
 import { buildFriend } from './stages/meadow/models/critters'
-import { buildDog, KIPPER_LOOK, NEDDY_LOOK, TIGER_LOOK } from './stages/meadow/models/dog'
+import { buildBiped, buildDog, KIPPER_LOOK, NEDDY_LOOK, TIGER_LOOK } from './stages/meadow/models/dog'
 import { bake } from './stages/meadow/models/kit'
 import { basket, bushPieces, cloud, guideStar, hidingPlace, treePieces } from './stages/meadow/models/props'
 import { buildToy } from './stages/meadow/models/toys'
@@ -16,7 +16,22 @@ const turn = { side: Math.PI / 2, front: 0, quarter: Math.PI / 5 }[params.get('v
 
 function Row() {
   const items = useMemo((): THREE.Object3D[] => {
-    if (set === 'dogs') return [KIPPER_LOOK, TIGER_LOOK, NEDDY_LOOK].map((l) => buildDog(l).root)
+    if (set === 'dogs') return [buildBiped(KIPPER_LOOK).root, buildBiped(TIGER_LOOK).root, buildDog(NEDDY_LOOK).root]
+    if (set === 'sleep') {
+      const b = basket()
+      const k = buildBiped(KIPPER_LOOK)
+      k.body.rotation.set(0.32, 0, 0)
+      k.body.position.set(0, -0.3, -0.05)
+      k.legs.forEach((l) => (l.rotation.x = -1.45))
+      k.arms.forEach((a, i) => a.rotation.set(-0.75, 0, (i ? -1 : 1) * 0.45))
+      k.head.rotation.set(0.55, 0, 0.12)
+      k.eyes.forEach((e) => (e.scale.y = 0.12))
+      k.tail.rotation.set(1.3, 0, 0)
+      k.root.position.set(0, 0.12, 0)
+      k.root.rotation.y = Math.PI / 2
+      b.add(k.root)
+      return [b]
+    }
     if (set === 'friends')
       return FRIENDS.map((f, i) => {
         const r = buildFriend(f.id)
@@ -38,7 +53,7 @@ function Row() {
   )
 }
 
-const cam = { dogs: [0, 1.6, 6], friends: [0, 1.4, 9.5], toys: [0, 0.9, 4.5], things: [0, 2.6, 14] }[set] as [number, number, number]
+const cam = { sleep: [0, 2.6, 4.5], dogs: [0, 1.6, 6], friends: [0, 1.4, 9.5], toys: [0, 0.9, 4.5], things: [0, 2.6, 14] }[set] as [number, number, number]
 createRoot(document.getElementById('root')!).render(
   <Canvas flat camera={{ position: cam, fov: 35 }} onCreated={({ camera }) => camera.lookAt(0, set === 'things' ? 0.9 : 0.6, 0)}>
     <hemisphereLight args={['#fff8e8', '#9fc77a', 1.6]} />

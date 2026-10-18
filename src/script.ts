@@ -46,7 +46,7 @@ async function round(run: Run, shell: Shell, stage: Stage, settings: Settings, r
   await friendSay(LINES.friend.help)
   stage.mood('')
 
-  const firstTry = await ask(run, shell.questionEl, q, settings)
+  const firstTry = await ask(run, shell.questionEl, q, settings, () => stage.celebrate(r))
   recordAnswer(q.letter, firstTry)
 
   await friendSay(LINES.friend.giveBack(toyName(r)))

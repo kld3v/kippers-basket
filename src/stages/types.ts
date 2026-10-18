@@ -21,6 +21,8 @@ export interface Stage {
   mood(m: Mood): void
   /** Kipper and Tiger jump for joy. */
   cheer(): void
+  /** The big moment after a right answer: everyone jumps about. */
+  celebrate(r: Round): void
   /** From setting off until this round's friend has popped out to say hello. */
   find(run: Run, r: Round): Promise<void>
   talking(r: Round, on: boolean): void

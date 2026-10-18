@@ -55,20 +55,32 @@ svg [class] {
 
 .head,
 .ear,
-.leg {
+.leg,
+.arm {
   transition: transform 0.4s ease;
 }
 
-.walking .leg-a {
-  animation: stride 0.46s ease-in-out infinite alternate;
+/* Upright walking: legs stride in turn, arms swing against them, the body bobs. */
+.walking .leg-near,
+.walking .arm-far {
+  animation: stride 0.42s ease-in-out infinite alternate;
 }
-.walking .leg-b {
-  animation: stride 0.46s ease-in-out infinite alternate-reverse;
+.walking .leg-far,
+.walking .arm-near {
+  animation: stride 0.42s ease-in-out infinite alternate-reverse;
 }
 @keyframes stride {
-  from { transform: rotate(-20deg); }
-  to { transform: rotate(18deg); }
+  from { transform: rotate(-24deg); }
+  to { transform: rotate(22deg); }
 }
+.walking .torso,
+.walking .head {
+  animation: bob 0.21s ease-in-out infinite alternate;
+}
+@keyframes bob {
+  to { transform: translateY(-2.5%); }
+}
+
 .walking .ear {
   animation: flop 0.23s ease-in-out infinite alternate;
 }
@@ -76,13 +88,7 @@ svg [class] {
   from { transform: rotate(-3deg); }
   to { transform: rotate(7deg); }
 }
-.walking .head {
-  animation: nod 0.46s ease-in-out infinite alternate;
-}
-@keyframes nod {
-  from { transform: rotate(-2deg); }
-  to { transform: rotate(3deg); }
-}
+
 
 .tail-sleep {
   animation: wag 2.4s ease-in-out infinite alternate;
@@ -90,8 +96,10 @@ svg [class] {
 
 @media (prefers-reduced-motion: reduce) {
   .tail,
-  .walking .leg-a,
-  .walking .leg-b,
+  .walking .leg-near,
+  .walking .leg-far,
+  .walking .arm-near,
+  .walking .arm-far,
   .walking .ear,
   .walking .head {
     animation-duration: 1.2s;
@@ -104,4 +112,10 @@ svg [class] {
 }
 .drape.on {
   opacity: 1;
+}
+
+/* Arms up for joy after a right answer. */
+.cheering .arm-near,
+.cheering .arm-far {
+  transform: rotate(-150deg);
 }

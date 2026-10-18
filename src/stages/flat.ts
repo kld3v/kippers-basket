@@ -143,6 +143,19 @@ export class FlatStage implements Stage {
     setTimeout(() => void jump(this.tigerBob, this.tigerSlot.offsetHeight * 0.18), 140)
   }
 
+  celebrate(r: Round) {
+    const hops = (bob: HTMLElement, height: number, n: number, delay: number) => {
+      for (let i = 0; i < n; i++) setTimeout(() => void jump(bob, height), delay + i * 470)
+    }
+    hops(this.kipperBob, this.kipperSlot.offsetHeight * 0.24, 3, 0)
+    hops(this.tigerBob, this.tigerSlot.offsetHeight * 0.24, 3, 160)
+    const s = this.spots.get(r.index)
+    if (s) hops(s.bob, s.friendEl.offsetHeight * 0.2, 2, 90)
+    // Arms up while they bounce.
+    for (const svg of this.dogs()) svg.classList.add('cheering')
+    setTimeout(() => this.dogs().forEach((svg) => svg.classList.remove('cheering')), 1500)
+  }
+
   /** Scroll the world: Kipper and Tiger trot on the spot while `outgoing` slides away and `incoming` arrives. */
   private async walk(run: Run, outgoing: HTMLElement | null, incoming: HTMLElement, ms = 2700) {
     incoming.style.transform = ''

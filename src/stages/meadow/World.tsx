@@ -8,7 +8,7 @@ import type { FriendId, SpotKind, ToyId } from '../../content'
 import { InkPass, PARTICLES } from './ink'
 import { HOME, POND, SPOTS, bushSpots, fog, heightAt, pathRibbon, pond, scatter, terrain, treeSpots } from './land'
 import { buildFriend } from './models/critters'
-import { buildDog, type DogLook } from './models/dog'
+import { buildBiped, type DogLook } from './models/dog'
 import { bake, ball, canvasTexture, outlineMaterial, toon } from './models/kit'
 import { basket, bushPieces, cloud, flowerGeometry, grassGeometry, guideStar, hidingPlace, lilyPad, treePieces } from './models/props'
 import { buildToy } from './models/toys'
@@ -46,7 +46,7 @@ export const restingAt = (id: ToyId) => {
 }
 /** Where Tiger curls up, beside the basket. */
 export const BED = (() => {
-  const p = new THREE.Vector3(HOME.at.x - 2.1, 0, HOME.at.z + 0.75)
+  const p = new THREE.Vector3(HOME.at.x - 2.2, 0, HOME.at.z + 0.05)
   return p.setY(heightAt(p.x, p.z))
 })()
 
@@ -340,7 +340,7 @@ function Friends({ play, onTap }: { play: Play; onTap: () => void }) {
 }
 
 function Dog({ look, body, onTap }: { look: DogLook; body: Body; onTap: () => void }) {
-  const rig = useMemo(() => buildDog(look), [look])
+  const rig = useMemo(() => buildBiped(look), [look])
   const st = useRef({ gait: 0, ear: 0, blinkUntil: 0, nextBlink: 2 })
   useFrame(({ clock }, rawDt) => {
     const dt = Math.min(rawDt, 0.05)
@@ -348,37 +348,38 @@ function Dog({ look, body, onTap }: { look: DogLook; body: Body; onTap: () => vo
     const s = st.current
     const r = rig
     r.root.visible = !body.hidden
-    r.root.position.set(body.pos.x, body.pos.y + body.lift - (body.wet ? 0.16 : 0), body.pos.z)
+    r.root.position.set(body.pos.x, body.pos.y + body.lift - (body.wet ? 0.2 : 0), body.pos.z)
     r.root.rotation.y = body.heading
     const sad = body.face === 'sad'
     if (body.asleep) {
-      // Curled up: legs tucked, head down on the paws, eyes shut, tail round.
-      r.body.position.y = -look.legLen * 0.95
-      r.legs.forEach((l, i) => (l.rotation.x = i < 2 ? -1.45 : 1.45))
-      r.head.rotation.set(0.42, 0.3, 0)
-      r.ears.forEach((e) => (e.rotation.x = 0.25))
+      // Dozing sitting up: legs out in front, slumped forward, chin on his chest, paws in his lap.
+      r.body.rotation.set(0.32, 0, 0)
+      r.body.position.set(0, -0.3 + Math.sin(t * 1.6) * 0.01, -0.05)
+      r.legs.forEach((l) => (l.rotation.x = -1.45))
+      r.arms.forEach((a, i) => a.rotation.set(-0.75, 0, (i ? -1 : 1) * 0.45))
+      r.head.rotation.set(0.55, 0, 0.12)
+      r.ears.forEach((e) => (e.rotation.x = 0.3))
       r.eyes.forEach((e) => (e.scale.y = 0.12))
-      r.tail.rotation.set(1.2, Math.sin(t * 1.2) * 0.15, 0)
-      r.body.scale.y = 1 + Math.sin(t * 1.6) * 0.025
+      r.tail.rotation.set(1.3, Math.sin(t * 1.2) * 0.2, 0)
       return
     }
-    r.body.scale.y = 1
-    r.head.rotation.y = 0
     const amp = Math.min(1, body.speed / 4.5)
-    s.gait += dt * (5 + body.speed * 2.3)
-    const sw = Math.sin(s.gait) * 0.85 * amp
+    s.gait += dt * (6.5 + body.speed * 2.2)
     const air = body.lift > 0.03
-    // Legs swing in diagonal pairs; in the air they stretch out front and back.
-    r.legs[0].rotation.x = air ? -0.75 : sw
-    r.legs[3].rotation.x = air ? 0.75 : sw
-    r.legs[1].rotation.x = air ? -0.75 : -sw
-    r.legs[2].rotation.x = air ? 0.75 : -sw
-    r.body.position.y = Math.abs(Math.sin(s.gait)) * 0.07 * amp
-    r.body.rotation.x = air ? (body.vy > 0 ? -0.18 : 0.12) : 0
-    r.head.rotation.x = (sad ? 0.32 : 0) - Math.sin(s.gait * 2) * 0.06 * amp + Math.sin(t * 1.3) * 0.02
-    r.tail.rotation.set(sad ? 1.0 : -0.1 * amp, Math.sin(t * (sad ? 3 : body.face === 'happy' ? 15 : 8)) * (sad ? 0.1 : 0.55), 0)
+    const swing = Math.sin(s.gait) * 0.95 * amp
+    r.arms.forEach((a, i) => (a.rotation.z = (i ? -1 : 1) * 0.12))
+    // Legs stride in turn and the arms swing against them; in the air, one knee up and both arms high.
+    r.legs[0].rotation.x = air ? -0.75 : swing
+    r.legs[1].rotation.x = air ? 0.35 : -swing
+    const armRest = Math.sin(t * 1.5) * 0.05 * (1 - amp)
+    r.arms[0].rotation.x = air ? -2.7 : -swing * 0.9 + armRest
+    r.arms[1].rotation.x = air ? -2.7 : swing * 0.9 + armRest
+    r.body.rotation.set(0.16 * amp, 0, Math.sin(s.gait) * 0.05 * amp)
+    r.body.position.set(0, Math.abs(Math.cos(s.gait)) * 0.07 * amp, 0)
+    r.head.rotation.set((sad ? 0.35 : 0) - 0.12 * amp + Math.sin(t * 1.3) * 0.02, 0, 0)
+    r.tail.rotation.set(sad ? 0.9 : 0, Math.sin(t * (sad ? 3 : body.face === 'happy' ? 15 : 8)) * (sad ? 0.1 : 0.6), 0)
     // Ears fly back as he runs and bounce with each stride.
-    s.ear += (-amp * 0.75 + Math.sin(s.gait * 2) * 0.2 * amp + (sad ? 0.2 : 0) - s.ear) * Math.min(1, dt * 10)
+    s.ear += (-amp * 0.7 + Math.cos(s.gait * 2) * 0.18 * amp + (sad ? 0.2 : 0) - s.ear) * Math.min(1, dt * 10)
     r.ears.forEach((e) => (e.rotation.x = s.ear))
     if (t > s.nextBlink) {
       s.blinkUntil = t + 0.12
