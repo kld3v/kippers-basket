@@ -1,0 +1,16 @@
+{
+  "name": "Kipper's Basket",
+  "short_name": "Kipper",
+  "description": "Help Kipper find his toys by finding the letter each word starts with.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#fbf6ea",
+  "theme_color": "#cde4ee",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
