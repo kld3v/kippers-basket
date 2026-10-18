@@ -367,6 +367,207 @@ const PICTURES: Record<string, Draw> = {
   },
 }
 
+
+// The second word for most letters, so a game doesn't keep showing the same pictures.
+Object.assign(PICTURES, {
+  ant: (k) =>
+    [[54, 74, 46, 96], [62, 74, 62, 98], [70, 72, 78, 96]].map(([a, b, c, d]) => k.line([[a, b], [c, d], [c + 5, d]], { w: 2 })).join('') +
+    k.line([[90, 46], [96, 30], [102, 26]], { w: 1.8 }) +
+    k.line([[84, 46], [84, 28], [90, 22]], { w: 1.8 }) +
+    k.blob(34, 72, 22, 17, { fill: '#9a4f3b', w: 2.4 }) +
+    k.blob(61, 68, 12, 10, { fill: '#9a4f3b', w: 2.2 }) +
+    k.blob(86, 60, 16, 15, { fill: '#a85a44', w: 2.4 }) +
+    k.cheek(82, 66, 4) +
+    k.eye(90, 56, 3.4) +
+    k.line([[86, 66], [91, 69], [96, 66]], { w: 1.6 }),
+
+  bus: (k) =>
+    k.shape([[10, 98], [10, 26], [18, 16], [102, 16], [110, 26], [110, 98]], { fill: P.red, w: 2.6 }) +
+    [26, 54].map((y) => [18, 41, 64, 87].map((x) => k.shape([[x, y], [x + 17, y], [x + 17, y + 16], [x, y + 16]], { fill: P.bluePale, w: 1.8, smooth: false, off: 0.5 })).join('')).join('') +
+    k.line([[12, 48], [108, 48]], { w: 2.4, ink: P.cream }) +
+    k.blob(103, 86, 3, 3.4, { fill: P.yellow, w: 1.2 }) +
+    [30, 90].map((x) => k.blob(x, 99, 11, 11, { fill: '#5b514d', w: 2.2 }) + k.blob(x, 99, 4, 4, { fill: '#d8d3cb', w: 1.2, gap: 0 })).join(''),
+
+  car: (k) =>
+    k.shape([[8, 84], [12, 66], [30, 60], [42, 42], [80, 42], [94, 60], [108, 64], [112, 84]], { fill: P.blue, w: 2.6 }) +
+    k.shape([[46, 48], [60, 48], [60, 60], [38, 60]], { fill: P.bluePale, w: 1.8, smooth: false, off: 0.5 }) +
+    k.shape([[66, 48], [78, 48], [88, 60], [66, 60]], { fill: P.bluePale, w: 1.8, smooth: false, off: 0.5 }) +
+    k.blob(108, 70, 3.4, 4, { fill: P.yellow, w: 1.3 }) +
+    k.line([[54, 68], [60, 68]], { w: 2 }) +
+    [30, 90].map((x) => k.blob(x, 86, 12, 12, { fill: '#5b514d', w: 2.4 }) + k.blob(x, 86, 4.6, 4.6, { fill: '#d8d3cb', w: 1.4, gap: 0 })).join(''),
+
+  drum: (k) =>
+    k.line([[36, 14], [70, 34]], { w: 3, ink: P.brownDark }) +
+    k.line([[86, 12], [56, 34]], { w: 3, ink: P.brownDark }) +
+    k.dot(36, 14, 4.5, P.cream) +
+    k.dot(86, 12, 4.5, P.cream) +
+    k.shape([[20, 44], [100, 44], [100, 92], [86, 100], [34, 100], [20, 92]], { fill: P.red, w: 2.6 }) +
+    k.line([[22, 50], [40, 92], [60, 50], [80, 92], [98, 50]], { w: 2, ink: P.yellow, smooth: false }) +
+    k.blob(60, 44, 40, 11, { fill: P.cream, w: 2.4, n: 16 }),
+
+  elephant: (k) => {
+    const grey = '#b7b6c6'
+    return (
+      [[30, 92], [46, 94], [62, 94], [76, 92]].map(([x, y]) => k.shape([[x - 7, 74], [x + 7, 74], [x + 7, y], [x - 7, y]], { fill: grey, w: 2.2 })).join('') +
+      k.blob(50, 72, 34, 24, { fill: grey, w: 2.6 }) +
+      k.line([[16, 70], [10, 80]], { w: 2.2 }) +
+      k.line([[96, 66], [108, 58], [110, 44], [104, 40]], { w: 8, wob: 0 }) +
+      k.line([[96, 66], [108, 58], [110, 44], [104, 40]], { w: 4.6, wob: 0, ink: grey }) +
+      k.blob(84, 56, 22, 20, { fill: grey, w: 2.4 }) +
+      k.blob(70, 58, 13, 17, { fill: '#c9c8d6', w: 2.2 }) +
+      k.blob(70, 58, 7, 10, { fill: P.pink, ink: false, edge: false }) +
+      k.cheek(92, 64, 4.5) +
+      k.eye(90, 51, 3.6)
+    )
+  },
+
+  frog: (k) => {
+    const green = '#8fca6e'
+    return (
+      k.blob(60, 104, 50, 8, { fill: '#7fbf8a', w: 2 }) +
+      k.blob(36, 98, 12, 6, { fill: green, w: 2 }) +
+      k.blob(84, 98, 12, 6, { fill: green, w: 2 }) +
+      k.blob(60, 74, 36, 26, { fill: green, w: 2.6 }) +
+      k.blob(43, 46, 13, 13, { fill: green, w: 2.4 }) +
+      k.blob(77, 46, 13, 13, { fill: green, w: 2.4 }) +
+      k.blob(43, 46, 8, 8, { fill: '#fff', w: 1.6 }) +
+      k.blob(77, 46, 8, 8, { fill: '#fff', w: 1.6 }) +
+      k.eye(44, 47, 3.8) +
+      k.eye(78, 47, 3.8) +
+      k.line([[38, 74], [50, 82], [70, 82], [82, 74]], { w: 2.2 }) +
+      k.cheek(34, 72, 6) +
+      k.cheek(86, 72, 6)
+    )
+  },
+
+  guitar: (k) =>
+    `<g transform="rotate(-24 60 62)">` +
+    k.shape([[56, 6], [64, 6], [65, 16], [55, 16]], { fill: P.brownDark, w: 2, smooth: false }) +
+    k.shape([[56, 16], [64, 16], [64, 52], [56, 52]], { fill: P.brown, w: 2, smooth: false }) +
+    k.blob(60, 58, 19, 17, { fill: '#e09243', w: 2.4 }) +
+    k.blob(60, 86, 26, 24, { fill: '#e09243', w: 2.6 }) +
+    k.blob(60, 70, 8, 8, { fill: '#5a4334', w: 1.8 }) +
+    k.shape([[50, 94], [70, 94], [70, 99], [50, 99]], { fill: P.brownDark, w: 1.6, smooth: false }) +
+    [57, 60, 63].map((x) => k.line([[x, 12], [x, 96]], { w: 0.9, wob: 0 })).join('') +
+    `</g>`,
+
+  house: (k) =>
+    k.shape([[82, 40], [82, 22], [94, 22], [94, 50]], { fill: P.red, w: 2, smooth: false }) +
+    k.blob(92, 14, 6, 4, { fill: '#fff', w: 1.4 }) +
+    k.blob(100, 8, 4, 3, { fill: '#fff', w: 1.2 }) +
+    k.shape([[24, 56], [96, 56], [96, 106], [24, 106]], { fill: '#f6e2b0', w: 2.6, smooth: false }) +
+    k.shape([[14, 60, 1], [60, 20, 1], [106, 60, 1]], { fill: P.red, w: 2.6, smooth: false }) +
+    k.shape([[52, 106], [52, 82], [60, 76], [68, 82], [68, 106]], { fill: P.blue, w: 2.2 }) +
+    [[30, 68], [76, 68]].map(([x, y]) => k.shape([[x, y], [x + 14, y], [x + 14, y + 14], [x, y + 14]], { fill: P.bluePale, w: 1.8, smooth: false }) + k.line([[x + 7, y], [x + 7, y + 14]], { w: 1.4 }) + k.line([[x, y + 7], [x + 14, y + 7]], { w: 1.4 })).join(''),
+
+  jam: (k) =>
+    k.shape([[30, 40], [90, 40], [93, 98], [27, 98]], { fill: '#d23f55', w: 2.6 }) +
+    k.shape([[36, 60], [84, 60], [84, 84], [36, 84]], { fill: '#fff8e8', w: 1.8, smooth: false, off: 0.6 }) +
+    k.shape([[60, 80], [52, 70], [54, 64], [60, 67], [66, 64], [68, 70]], { fill: P.red, w: 1.4, gap: 0 }) +
+    k.blob(40, 50, 3, 7, { fill: '#fff', ink: false, op: 0.6, edge: false }) +
+    k.shape([[24, 40], [30, 30], [40, 26], [60, 24], [80, 26], [90, 30], [96, 40], [86, 44], [74, 40], [60, 44], [46, 40], [34, 44]], { fill: '#f6efe2', w: 2.2 }) +
+    [[40, 32], [56, 30], [72, 30], [84, 34]].map(([x, y]) => k.dot(x, y, 3, P.red)).join(''),
+
+  key: (k) =>
+    k.blob(32, 58, 20, 20, { fill: P.yellow, w: 2.6 }) +
+    k.blob(32, 58, 7, 7, { fill: P.paper, w: 2 }) +
+    k.shape([[50, 54], [106, 54], [106, 63], [100, 63], [100, 74], [92, 74], [92, 63], [84, 63], [84, 70], [76, 70], [76, 63], [50, 63]], { fill: P.yellow, w: 2.2, smooth: false }),
+
+  leaf: (k) =>
+    k.line([[24, 100], [36, 86]], { w: 3, ink: P.brownDark }) +
+    k.shape([[34, 88, 1], [30, 56], [46, 30], [76, 16], [100, 14, 1], [96, 42], [82, 70], [58, 86]], { fill: P.green, w: 2.6 }) +
+    k.line([[36, 86], [56, 62], [78, 38], [98, 16]], { w: 1.8, ink: P.greenDark }) +
+    [[48, 72, 40, 58], [58, 60, 50, 44], [68, 48, 64, 32], [56, 64, 70, 70], [68, 52, 82, 56]].map(([a, b, c, d]) => k.line([[a, b], [c, d]], { w: 1.4, ink: P.greenDark })).join(''),
+
+  monkey: (k) => {
+    const brown = '#a8714a'
+    const face = '#f3d3ab'
+    return (
+      k.blob(24, 60, 13, 13, { fill: brown, w: 2.4 }) +
+      k.blob(96, 60, 13, 13, { fill: brown, w: 2.4 }) +
+      k.blob(24, 60, 7, 7, { fill: face, ink: false, edge: false }) +
+      k.blob(96, 60, 7, 7, { fill: face, ink: false, edge: false }) +
+      k.blob(60, 60, 34, 32, { fill: brown, w: 2.6 }) +
+      k.shape([[60, 48], [70, 40], [82, 46], [84, 62], [76, 84], [60, 90], [44, 84], [36, 62], [38, 46], [50, 40]], { fill: face, w: 2 }) +
+      k.line([[56, 28], [60, 22], [66, 28]], { w: 2.2 }) +
+      k.eye(50, 56, 4.2) +
+      k.eye(70, 56, 4.2) +
+      k.dot(56, 68, 1.8) +
+      k.dot(64, 68, 1.8) +
+      k.line([[48, 74], [60, 82], [72, 74]], { w: 2 }) +
+      k.cheek(44, 70, 4.5) +
+      k.cheek(76, 70, 4.5)
+    )
+  },
+
+  net: (k) =>
+    k.line([[18, 108], [58, 58]], { w: 4, ink: P.brown }) +
+    k.shape([[60, 48], [66, 80], [80, 98], [96, 86], [104, 52]], { fill: '#ffffff', ink: false, op: 0.5, edge: false }) +
+    [[64, 60, 102, 58], [66, 72, 100, 70], [72, 84, 96, 82], [70, 50, 76, 96], [82, 50, 86, 98], [94, 50, 96, 88]].map(([a, b, c, d]) => k.line([[a, b], [c, d]], { w: 1.1, op: 0.7 })).join('') +
+    k.line([[60, 48], [66, 80], [80, 98], [96, 86], [104, 52]], { w: 1.8 }) +
+    k.blob(82, 46, 23, 11, { fill: 'none', w: 3, ink: P.red, rot: -0.15 }),
+
+  penguin: (k) =>
+    k.blob(46, 104, 9, 4.5, { fill: P.orange, w: 1.8 }) +
+    k.blob(74, 104, 9, 4.5, { fill: P.orange, w: 1.8 }) +
+    k.blob(30, 70, 7, 18, { fill: '#3b3a45', w: 2, rot: 0.4 }) +
+    k.blob(90, 70, 7, 18, { fill: '#3b3a45', w: 2, rot: -0.4 }) +
+    k.blob(60, 62, 30, 42, { fill: '#3b3a45', w: 2.6 }) +
+    k.shape([[60, 40], [76, 50], [82, 76], [74, 98], [60, 102], [46, 98], [38, 76], [44, 50]], { fill: '#fff', ink: false, edge: false }) +
+    k.eye(52, 42, 3.8) +
+    k.eye(68, 42, 3.8) +
+    `<circle cx="52" cy="42" r="6" fill="none" stroke="#fff" stroke-width="2.4"/><circle cx="68" cy="42" r="6" fill="none" stroke="#fff" stroke-width="2.4"/>` +
+    k.shape([[54, 50], [66, 50], [60, 58, 1]], { fill: P.orange, w: 1.6, gap: 0, off: 0.5 }) +
+    k.cheek(46, 54, 4.5) +
+    k.cheek(74, 54, 4.5),
+
+  rocket: (k) =>
+    k.shape([[50, 92], [60, 116, 1], [70, 92]], { fill: P.orange, w: 2, gap: 0 }) +
+    k.shape([[54, 92], [60, 106, 1], [66, 92]], { fill: P.yellow, ink: false, edge: false }) +
+    k.shape([[42, 70], [26, 92, 1], [44, 90]], { fill: P.red, w: 2.2, smooth: false }) +
+    k.shape([[78, 70], [94, 92, 1], [76, 90]], { fill: P.red, w: 2.2, smooth: false }) +
+    k.shape([[60, 6, 1], [76, 30], [78, 90], [42, 90], [44, 30]], { fill: '#f4f1ea', w: 2.6 }) +
+    k.shape([[60, 7, 1], [72, 24], [48, 24]], { fill: P.red, ink: false, edge: false, off: 0.5 }) +
+    k.blob(60, 50, 10, 10, { fill: P.bluePale, w: 2.4 }) +
+    k.blob(57, 47, 3, 3, { fill: '#fff', ink: false, edge: false }),
+
+  snake: (k) =>
+    k.line([[20, 98], [44, 102], [64, 92], [62, 74], [42, 66], [44, 48], [66, 40], [84, 42]], { w: 18, wob: 0 }) +
+    k.line([[20, 98], [44, 102], [64, 92], [62, 74], [42, 66], [44, 48], [66, 40], [84, 42]], { w: 13.6, wob: 0, ink: '#8cc76a' }) +
+    [[32, 100], [56, 98], [52, 70], [50, 54]].map(([x, y]) => k.dot(x, y, 2.6, '#5f9d48')).join('') +
+    k.line([[100, 46], [108, 48], [112, 44]], { w: 1.8, ink: P.red }) +
+    k.line([[108, 48], [112, 52]], { w: 1.8, ink: P.red }) +
+    k.blob(90, 42, 13, 11, { fill: '#8cc76a', w: 2.2 }) +
+    k.eye(92, 38, 3.2) +
+    k.cheek(86, 46, 3.6),
+
+  teapot: (k) =>
+    k.line([[24, 58], [12, 52], [10, 72], [28, 82]], { w: 7, wob: 0 }) +
+    k.line([[24, 58], [12, 52], [10, 72], [28, 82]], { w: 3.4, wob: 0, ink: '#e8f2fa' }) +
+    k.shape([[88, 72], [100, 56], [108, 42], [114, 44], [106, 62], [94, 86]], { fill: '#e8f2fa', w: 2.4 }) +
+    k.blob(56, 74, 36, 28, { fill: '#e8f2fa', w: 2.6 }) +
+    [[44, 70], [62, 66], [52, 86], [70, 84]].map(([x, y]) => k.blob(x, y, 5, 5, { fill: P.blue, w: 1.4, gap: 0 })).join('') +
+    k.blob(56, 48, 20, 6, { fill: P.blue, w: 2.2 }) +
+    k.blob(56, 40, 5, 5, { fill: P.blue, w: 2 }),
+
+  vase: (k) =>
+    [[60, 52, 44, 24], [60, 52, 60, 16], [60, 52, 78, 26]].map(([a, b, c, d]) => k.line([[a, b], [(a + c) / 2, (b + d) / 2 + 4], [c, d]], { w: 2, ink: P.greenDark })).join('') +
+    [[44, 24, P.pink], [60, 16, P.yellow], [78, 26, '#fff']]
+      .map(([x, y, c]) => [0, 1, 2, 3, 4].map((i) => k.blob((x as number) + Math.cos(i * 1.257) * 6, (y as number) + Math.sin(i * 1.257) * 6, 5, 5, { fill: c as string, w: 1.4, gap: 0 })).join('') + k.dot(x as number, y as number, 3, P.orange))
+      .join('') +
+    k.shape([[46, 106], [40, 84], [48, 66], [52, 52], [68, 52], [72, 66], [80, 84], [74, 106]], { fill: P.blue, w: 2.6 }) +
+    k.line([[44, 80], [76, 80]], { w: 2, ink: '#fff', op: 0.7 }),
+
+  whale: (k) =>
+    [[54, 30, 46, 14], [58, 28, 58, 12], [62, 30, 70, 14]].map(([a, b, c, d]) => k.line([[a, b], [c, d]], { w: 2.4, ink: P.blue })).join('') +
+    k.shape([[18, 62], [6, 44, 1], [20, 52], [28, 40, 1], [26, 62]], { fill: '#6f9fcf', w: 2.2 }) +
+    k.shape([[22, 66], [30, 50], [56, 38], [88, 42], [108, 60], [102, 80], [70, 88], [38, 84]], { fill: '#7fb0dc', w: 2.6 }) +
+    k.shape([[46, 80], [70, 86], [100, 78], [96, 84], [70, 90], [48, 86]], { fill: '#d8e9f5', ink: false, edge: false }) +
+    k.eye(86, 58, 3.8) +
+    k.line([[90, 70], [98, 68]], { w: 2 }) +
+    k.cheek(82, 66, 4.6),
+} satisfies Record<string, Draw>)
+
 export const PICTURE_IDS = Object.keys(PICTURES)
 
 export const picture = (id: string, cls = '') => svg('0 0 120 120', PICTURES[id](new Ink(`pic-${id}`)), `picture ${cls}`.trim())

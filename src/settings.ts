@@ -1,4 +1,4 @@
-import { ALL_LETTERS, PRESETS } from './content'
+import { ALL_LETTERS } from './content'
 
 // Grown-up settings and per-letter progress, kept in this browser only.
 
@@ -14,7 +14,7 @@ export interface Settings {
 }
 
 export const DEFAULTS: Settings = {
-  letters: PRESETS[0].letters,
+  letters: ALL_LETTERS,
   choices: 2,
   letterCase: 'lower',
   say: 'sounds',

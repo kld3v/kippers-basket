@@ -12,11 +12,22 @@ export function card(w: number, h: number, fill: string, seed: string, r = 14) {
   return svg(`0 0 ${w} ${h}`, k.shape(pts, { fill, w: 3, wob: 1.2, off: 1.6 }), 'card-bg')
 }
 
-export function playIcon() {
-  const k = new Ink('play')
+export function playIcon(fill: string = P.green) {
+  const k = new Ink('play' + fill)
   return svg(
     '0 0 120 120',
-    k.blob(60, 60, 52, 52, { fill: P.green, w: 3.4, n: 16 }) + k.shape([[46, 34, 1], [88, 60, 1], [46, 86, 1]], { fill: '#fff', w: 3.4, smooth: false, gap: 0 }),
+    k.blob(60, 60, 52, 52, { fill, w: 3.4, n: 16 }) + k.shape([[46, 34, 1], [88, 60, 1], [46, 86, 1]], { fill: '#fff', w: 3.4, smooth: false, gap: 0 }),
+  )
+}
+
+export function homeIcon() {
+  const k = new Ink('home')
+  return svg(
+    '0 0 120 120',
+    k.blob(60, 60, 52, 52, { fill: P.bluePale, w: 3.4, n: 16 }) +
+      k.shape([[36, 60], [36, 88], [84, 88], [84, 60]], { fill: '#fff', w: 3.2, smooth: false, gap: 0 }) +
+      k.shape([[28, 62, 1], [60, 32, 1], [92, 62, 1]], { fill: P.red, w: 3.2, smooth: false, gap: 0 }) +
+      k.shape([[54, 88], [54, 72], [66, 72], [66, 88]], { fill: P.tan, w: 2.6, smooth: false, gap: 0 }),
   )
 }
 

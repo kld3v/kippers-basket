@@ -1,5 +1,5 @@
-import { basketSvg, toy, type ToyId } from './art/props'
-import { TOYS } from './content'
+import { basketSvg, toy } from './art/props'
+import { TOYS, type ToyId } from './content'
 
 /** Kipper's basket in the corner, with a slot for every toy still to find. */
 export class Hud {

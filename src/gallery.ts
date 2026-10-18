@@ -1,6 +1,6 @@
 // Dev-only art board: every drawing on one page, for checking the style at a glance.
 import './art/art.css'
-import { kipper, kipperAsleep } from './art/kipper'
+import { dog, dogAsleep, kipper, kipperAsleep, TIGER } from './art/kipper'
 import { basketSvg, toy, TOY_IDS } from './art/props'
 import { friend, FRIEND_IDS } from './art/friends'
 
@@ -21,6 +21,9 @@ const asleep = kipperAsleep()
 card('kipper', kipper())
 card('kipper sad', kipper('sad'))
 card('kipper walking', kipper('walking'))
+card('tiger', dog(TIGER))
+const tigerSleeps = dogAsleep(TIGER)
+card('tiger asleep', `<svg viewBox="0 0 260 190">${tigerSleeps.inside}${tigerSleeps.over}</svg>`)
 card('basket', basketSvg())
 card('asleep', basketSvg(asleep.inside, asleep.over, 'asleep'))
 card('asleep + blanket', basketSvg(asleep.inside.replace('class="drape"', 'class="drape on"'), asleep.over, 'asleep'))

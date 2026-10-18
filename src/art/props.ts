@@ -1,7 +1,6 @@
+import type { ToyId } from '../content'
 import { Ink, INK, svg, type Pt } from './ink'
 import { P } from './palette'
-
-export type ToyId = 'ball' | 'bone' | 'blanket' | 'teddy' | 'slipper'
 
 /** Toy drawings, viewBox 0 0 100 100. */
 const TOYS: Record<ToyId, () => string> = {
@@ -79,6 +78,28 @@ const TOYS: Record<ToyId, () => string> = {
       k.blob(70, 37, 10, 9, { fill: '#fff', n: 12 })
     )
   },
+
+  sock() {
+    const k = new Ink('sock')
+    return (
+      k.shape([[34, 14], [62, 14], [63, 60], [80, 64], [92, 74], [90, 88], [74, 92], [46, 90], [36, 78]], { fill: P.red, w: 2.4 }) +
+      k.shape([[35, 15], [62, 15], [62, 28], [35, 28]], { fill: '#fff', w: 2, smooth: false, off: 0.6 }) +
+      [38, 50].map((y) => k.shape([[36, y], [63, y], [63, y + 6], [36, y + 6]], { fill: '#fff', ink: false, smooth: false, off: 0.6, edge: false })).join('') +
+      k.shape([[78, 66], [90, 74], [90, 87], [80, 90], [74, 78]], { fill: '#fff', ink: false, edge: false, off: 0.6 }) +
+      k.shape([[36, 74], [44, 70], [48, 82], [42, 90], [36, 82]], { fill: '#fff', ink: false, edge: false, off: 0.6 })
+    )
+  },
+
+  bowl() {
+    const k = new Ink('bowl')
+    return (
+      k.shape([[10, 48], [90, 48], [82, 82], [18, 82]], { fill: P.blue, w: 2.4 }) +
+      k.blob(50, 82, 32, 5, { fill: '#6f9cc6', w: 2 }) +
+      k.blob(50, 48, 40, 10, { fill: '#a9cbe8', w: 2.4, n: 16 }) +
+      [[34, 46], [44, 43], [56, 45], [66, 43], [40, 49], [52, 50], [62, 49]].map(([x, y]) => k.blob(x, y, 5, 3.6, { fill: P.brown, w: 1.2, gap: 0 })).join('') +
+      k.shape([[40, 64], [60, 64], [62, 60], [66, 63], [62, 66], [66, 69], [62, 72], [60, 68], [40, 68], [38, 72], [34, 69], [38, 66], [34, 63], [38, 60]], { fill: P.cream, w: 1.4, gap: 0 })
+    )
+  },
 }
 
 export const TOY_IDS = Object.keys(TOYS) as ToyId[]
@@ -129,3 +150,9 @@ export function basket(inside = '', over = '') {
 }
 
 export const basketSvg = (inside = '', over = '', cls = '') => svg('0 0 260 190', basket(inside, over), `basket ${cls}`.trim())
+
+/** The basket as two layers for 3D, so something can sit between the back and the front. */
+export function basketLayers() {
+  const [back, front] = basket('<!--in-->').split('<!--in-->')
+  return { back, front }
+}

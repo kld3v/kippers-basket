@@ -1,4 +1,5 @@
 import { Ink, INK, smoothPath, svg, type Pt } from './ink'
+import type { SpotKind } from '../content'
 import { P } from './palette'
 
 // Countryside for the walk. The hills and path are seamless tiles: every contour is a
@@ -87,7 +88,6 @@ export function cloud(seed: string) {
   return svg('0 0 200 100', k.cluster(blobs, '#fff', 4), 'cloud')
 }
 
-export type SpotKind = 'bush' | 'log' | 'burrow'
 
 /** Hiding places, viewBox 0 0 220 150 with their base on y≈146. */
 export function spot(kind: SpotKind, seed: string = kind) {
@@ -128,3 +128,37 @@ export function spot(kind: SpotKind, seed: string = kind) {
   }
   return svg('0 0 220 150', body, `hiding hiding-${kind}`)
 }
+
+// Small things for the 3D meadow, each drawn in its own little box.
+
+/** A standalone tree: trunk base at (60,120), crown up to y≈46. Box [14, 38, 92, 86]. */
+export const treeArt = (seed: string, s = 1) => tree(new Ink(seed), 60, 120, s)
+
+/** A flower on a short stem, box [0, 0, 24, 30]. */
+export function flowerArt(seed: string, petal: string) {
+  const k = new Ink(seed)
+  return k.line([[12, 29], [12, 14]], { w: 1.8, ink: P.greenDark }) + flower(k, 12, 10, petal)
+}
+
+/** A tuft of grass, box [0, 0, 24, 16]. */
+export const tuftArt = (seed: string) => tuft(new Ink(seed), 12, 15)
+
+/** A butterfly seen from above, box [0, 0, 40, 30]. */
+export function butterflyArt(seed: string, wing: string) {
+  const k = new Ink(seed)
+  return (
+    k.blob(11, 10, 9, 8, { fill: wing, w: 1.6 }) +
+    k.blob(29, 10, 9, 8, { fill: wing, w: 1.6 }) +
+    k.blob(13, 21, 6, 6, { fill: wing, w: 1.6 }) +
+    k.blob(27, 21, 6, 6, { fill: wing, w: 1.6 }) +
+    k.blob(20, 15, 2.4, 9, { fill: INK, ink: false, off: 0 }) +
+    k.line([[19, 7], [16, 2]], { w: 1.2 }) +
+    k.line([[21, 7], [24, 2]], { w: 1.2 })
+  )
+}
+
+/** A floating "z" for snoring, box [0, 0, 30, 30]. */
+export const zzzArt = () => new Ink('zzz').line([[6, 8, 1], [24, 8, 1], [6, 24, 1], [24, 24, 1]], { w: 4, ink: '#fff', smooth: false })
+
+/** A lily pad, box [0, 0, 40, 26]. */
+export const lilyArt = (seed: string) => new Ink(seed).shape([[20, 13, 1], [36, 6], [38, 14], [30, 22], [12, 23], [3, 15], [6, 6], [16, 3]], { fill: '#8fc87a', w: 1.8 })

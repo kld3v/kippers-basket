@@ -1,4 +1,7 @@
+import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
-// gallery.html is a dev-only art board (open /gallery.html under `npm run dev`); only the game is built.
-export default defineConfig({})
+// gallery.html and icon.html are dev-only art boards (open them under `npm run dev`); only the game is built.
+export default defineConfig({
+  plugins: [react()],
+})

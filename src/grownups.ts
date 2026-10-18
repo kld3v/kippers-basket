@@ -1,7 +1,7 @@
 import { canRecord, deleteClip, hasClip, playClip, record } from './audio/clips'
 import { unlockAudio } from './audio/sfx'
 import { speech } from './audio/speech'
-import { ALL_LETTERS, LETTERS, NARRATOR, PRESETS } from './content'
+import { ALL_LETTERS, LETTERS, PRESETS } from './content'
 import { clearStats, loadStats, type Settings } from './settings'
 
 const h = <K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', text = '') => {
@@ -92,7 +92,7 @@ export function openGrownups(settings: Settings, apply: (s: Settings) => void) {
   test.addEventListener('click', () => {
     unlockAudio()
     speech.unlock()
-    void speech.say(['Hello! Which letter does', 'igloo', 'start with?'], NARRATOR)
+    void speech.say('narrator', ['Hello! Which letter does igloo start with?'])
   })
   const voiceRow = h('div', 'inline')
   voiceRow.append(voice, test)
@@ -176,15 +176,15 @@ export function openGrownups(settings: Settings, apply: (s: Settings) => void) {
 
   d.append(
     head,
-    section('Letters to practise', h('p', 'note', 'Start small. Add more once she knows these.'), presets, grid),
+    section('Letters to practise', h('p', 'note', 'Each game asks seven different letters from these. Narrow it down while she is learning.'), presets, grid),
     section('Choices', segmented([[2, '2'], [3, '3'], [4, '4']], s.choices, (v) => ((s.choices = v as 2 | 3 | 4), commit()))),
     section('Letters look like', segmented([['lower', 'a b c'], ['upper', 'A B C']], s.letterCase, (v) => ((s.letterCase = v), commit()))),
     section(
       'Say the letter',
       segmented([['sounds', 'Sounds (phonics)'], ['names', 'Names']], s.say, (v) => ((s.say = v), commit())),
-      h('p', 'note', 'Speech voices can only guess at pure letter sounds. Record your own below and the game uses yours.'),
+      h('p', 'note', 'No voice can say a pure "sss" on its own, so the narrator stretches the word instead ("s-s-sun"). Record your own sounds below and the game uses yours.'),
     ),
-    section('Voice', voiceRow, captions),
+    section('Back-up voice', h('p', 'note', 'Used for any line without a recorded voice.'), voiceRow, captions),
     section('Your voice for each sound', h('p', 'note', 'Tap Record and say the sound once, like "sss" or "ih". It stops by itself.'), recs),
     section('Right first time', prog, resetStats),
   )

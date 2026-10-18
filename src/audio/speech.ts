@@ -1,15 +1,18 @@
-import { LETTERS, type VoiceStyle } from '../content'
+import { FRIENDS, LETTERS, STYLES, type Speaker, type VoiceStyle } from '../content'
+import manifest from '../voice-manifest.json'
 import { SPEED } from '../run'
 import { hasClip, playClip, stopClip } from './clips'
+import { audio } from './sfx'
 
-/** A line to speak: plain text, a letter's sound or name, or a pause. */
+/** A piece of a line: a sentence, a letter's sound or name, or a pause. */
 export type Part = string | { sound: string } | { name: string } | { pause: number }
 
-type Segment = { text: string } | { clip: string } | { pause: number }
+type Segment = { text: string } | { voice: string; text: string } | { rec: string } | { pause: number }
 
+const recorded = manifest as Record<string, string>
 const synth = 'speechSynthesis' in window ? window.speechSynthesis : null
 
-// Pleasant English voices, best first. Anything en-GB beats anything else.
+// Browser voices, best first, for anything without a recording. Anything en-GB beats anything else.
 const FAVOURITES = ['Sonia', 'Libby', 'Serena', 'Kate', 'Martha', 'Stephanie', 'Google UK English Female', 'Daniel', 'Arthur', 'Google UK English Male']
 
 function score(v: SpeechSynthesisVoice) {
@@ -22,6 +25,8 @@ function score(v: SpeechSynthesisVoice) {
   )
 }
 
+const styleOf = (s: Speaker): VoiceStyle => (s in STYLES ? STYLES[s as keyof typeof STYLES] : FRIENDS.find((f) => f.id === s)!.voice)
+
 class Speech {
   mode: 'sounds' | 'names' = 'sounds'
   preferred = ''
@@ -31,16 +36,20 @@ class Speech {
   // Chrome garbage-collects utterances mid-sentence and then never fires their end event, so hold them.
   private live = new Set<SpeechSynthesisUtterance>()
   private finishers = new Set<() => void>()
+  private buffers = new Map<string, Promise<AudioBuffer | null>>()
+  private source: AudioBufferSourceNode | null = null
+  private bus: GainNode | null = null
 
+  /** True when there is some way to be heard: recordings, or a browser voice. */
   get available() {
-    return !!synth && !!this.voice
+    return Object.keys(recorded).length > 0 || (!!synth && !!this.voice)
   }
 
   voices() {
     return (synth?.getVoices() ?? []).filter((v) => /^en([-_]|$)/i.test(v.lang)).sort((a, b) => score(b) - score(a))
   }
 
-  /** Voices load late (and Safari never says when), so keep asking for a few seconds. */
+  /** Browser voices load late (and Safari never says when), so keep asking for a few seconds. */
   async init() {
     if (!synth) return
     for (let i = 0; i < 30 && !this.voices().length; i++) await new Promise((r) => setTimeout(r, 100))
@@ -61,48 +70,115 @@ class Speech {
     synth.speak(u)
   }
 
+  has(speaker: Speaker, text: string) {
+    return `${speaker}|${text}` in recorded
+  }
+
+  /** Start downloading lines that are about to be needed, so they play without a gap. */
+  prefetch(speaker: Speaker, texts: string[]) {
+    for (const t of texts) {
+      const id = recorded[`${speaker}|${t}`]
+      if (id) void this.load(id)
+    }
+  }
+
+  private load(id: string) {
+    let p = this.buffers.get(id)
+    if (!p) {
+      p = fetch(`/voice/${id}.mp3`)
+        .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
+        .then((b) => audio().decodeAudioData(b))
+        .catch(() => {
+          this.buffers.delete(id)
+          return null
+        })
+      this.buffers.set(id, p)
+    }
+    return p
+  }
+
   stop() {
     this.token++
     synth?.cancel()
     stopClip()
+    try {
+      this.source?.stop()
+    } catch {
+      // already finished
+    }
+    this.source = null
     for (const finish of [...this.finishers]) finish()
     this.onCaption('')
   }
 
-  private segments(parts: Part[]): Segment[] {
+  private segments(speaker: Speaker, parts: Part[]): Segment[] {
     const out: Segment[] = []
     const text = (t: string) => {
       const last = out[out.length - 1]
-      if (last && 'text' in last) last.text += ' ' + t
+      if (last && 'text' in last && !('voice' in last)) last.text += ' ' + t
       else out.push({ text: t })
     }
     for (const p of parts) {
-      if (typeof p === 'string') text(p)
-      else if ('pause' in p) out.push({ pause: p.pause })
+      if (typeof p === 'string') {
+        const id = recorded[`${speaker}|${p}`]
+        if (id) out.push({ voice: id, text: p })
+        else text(p)
+      } else if ('pause' in p) out.push({ pause: p.pause })
       else if ('name' in p) text(LETTERS[p.name].name)
       else if (this.mode === 'names') text(LETTERS[p.sound].name)
-      else if (hasClip(p.sound)) out.push({ clip: p.sound })
+      else if (hasClip(p.sound)) out.push({ rec: p.sound })
       else text(LETTERS[p.sound].sound)
     }
     return out
   }
 
   /** Speak the parts in order. Resolves true when finished, false if something else cut in. */
-  async say(parts: Part[], style: VoiceStyle): Promise<boolean> {
+  async say(speaker: Speaker, parts: Part[]): Promise<boolean> {
     const my = ++this.token
     if (synth && (synth.speaking || synth.pending)) {
       synth.cancel()
       await new Promise((r) => setTimeout(r, 60)) // Chrome drops an utterance queued in the same tick as cancel()
     }
     stopClip()
-    for (const seg of this.segments(parts)) {
+    for (const seg of this.segments(speaker, parts)) {
       if (my !== this.token) return false
-      if ('text' in seg) await this.utter(seg.text, style)
-      else if ('clip' in seg) await playClip(seg.clip)
+      if ('voice' in seg) await this.play(seg.voice, seg.text, speaker)
+      else if ('text' in seg) await this.utter(seg.text, styleOf(speaker))
+      else if ('rec' in seg) await playClip(seg.rec)
       else await new Promise((r) => setTimeout(r, seg.pause * SPEED))
     }
     if (my === this.token) this.onCaption('')
     return my === this.token
+  }
+
+  private async play(id: string, text: string, speaker: Speaker) {
+    const my = this.token
+    this.onCaption(text)
+    const buffer = await this.load(id)
+    if (my !== this.token) return
+    if (!buffer || SPEED < 1) return buffer ? undefined : this.utter(text, styleOf(speaker))
+    const c = audio()
+    if (c.state !== 'running') void c.resume()
+    if (!this.bus) {
+      this.bus = c.createGain()
+      this.bus.connect(c.destination)
+    }
+    await new Promise<void>((resolve) => {
+      const src = c.createBufferSource()
+      src.buffer = buffer
+      src.connect(this.bus!)
+      // If iOS has suspended audio (after switching apps) the clip never ends, so don't wait for it forever.
+      const timer = setTimeout(() => finish(), buffer.duration * 1000 + 1200)
+      const finish = () => {
+        clearTimeout(timer)
+        this.finishers.delete(finish)
+        resolve()
+      }
+      src.onended = finish
+      this.finishers.add(finish)
+      this.source = src
+      src.start()
+    })
   }
 
   private utter(text: string, style: VoiceStyle) {

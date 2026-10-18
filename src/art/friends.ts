@@ -1,11 +1,10 @@
 import { Ink, INK, mirror, svg, type Pt } from './ink'
 import { P } from './palette'
-import { toyBody, type ToyId } from './props'
+import type { FriendId, ToyId } from '../content'
+import { toyBody } from './props'
 
 // Friends face the viewer, viewBox 0 0 200 220 with feet on y≈212.
 // Each draws its body, then the toy it is holding, then its paws over the toy.
-
-export type FriendId = 'rabbit' | 'badger' | 'weasel' | 'robin' | 'hedgehog' | 'mouse'
 
 interface FriendArt {
   /** Centre and size of the held toy. */
@@ -186,6 +185,79 @@ const ART: Record<FriendId, FriendArt> = {
     },
   },
 
+  owl: {
+    hold: [100, 156, 58],
+    draw(k, held) {
+      const brown = '#a87e59'
+      const wing: Pt[] = [[48, 116], [60, 108], [72, 122], [78, 148], [74, 168], [62, 174], [50, 158]]
+      const chevrons = [[88, 146], [112, 146], [100, 160], [88, 174], [112, 174]]
+        .map(([x, y]) => k.line([[x - 5, y - 3], [x, y + 2], [x + 5, y - 3]], { w: 1.6, ink: '#9a7650' }))
+        .join('')
+      return (
+        k.line([[86, 196], [84, 210]], { w: 3, ink: P.orange }) +
+        k.line([[114, 196], [116, 210]], { w: 3, ink: P.orange }) +
+        k.line([[76, 211], [84, 210], [92, 212]], { w: 2.6, ink: P.orange }) +
+        k.line([[108, 212], [116, 210], [124, 211]], { w: 2.6, ink: P.orange }) +
+        k.shape([[64, 84], [58, 58, 1], [80, 76]], { fill: brown, w: 2.2 }) +
+        k.shape(mirror([[64, 84], [58, 58, 1], [80, 76]]), { fill: brown, w: 2.2 }) +
+        k.shape([[46, 136], [52, 100], [72, 80], [100, 74], [128, 80], [148, 100], [154, 136], [146, 172], [126, 196], [100, 202], [74, 196], [54, 172]], { fill: brown }) +
+        k.blob(100, 160, 32, 36, { fill: '#efdcbc', ink: false, edge: false }) +
+        chevrons +
+        k.blob(81, 108, 19, 18, { fill: '#f5e9d3', w: 2 }) +
+        k.blob(119, 108, 19, 18, { fill: '#f5e9d3', w: 2 }) +
+        k.eye(81, 108, 7.5) +
+        k.eye(119, 108, 7.5) +
+        k.shape([[94, 120], [106, 120], [100, 132, 1]], { fill: '#e8b04c', w: 1.6, gap: 0, off: 0.5 }) +
+        held +
+        k.shape(wing, { fill: '#8f6a48' }) +
+        k.shape(mirror(wing), { fill: '#8f6a48' })
+      )
+    },
+  },
+
+  neddy: {
+    // Neddy Dog: a basset hound puppy, all ears, with a red collar.
+    hold: [100, 158, 60],
+    draw(k, held) {
+      const tan = '#d59c5f'
+      const brown = '#8f5a33'
+      const white = '#fbf8f1'
+      const ear: Pt[] = [[70, 66], [58, 84], [50, 118], [50, 150], [58, 168], [70, 166], [78, 140], [80, 104], [80, 78]]
+      return (
+        k.shape([[136, 176], [152, 156], [158, 132], [164, 126], [166, 136], [160, 160], [146, 182]], { fill: tan }) +
+        k.shape([[158, 132], [164, 126], [166, 136], [161, 140]], { fill: white, ink: false, edge: false }) +
+        k.blob(75, 206, 22, 10, { fill: white }) +
+        k.blob(125, 206, 22, 10, { fill: white }) +
+        k.shape([[58, 162], [62, 136], [80, 124], [120, 124], [138, 136], [142, 162], [140, 190], [124, 206], [100, 210], [76, 206], [60, 190]], { fill: tan }) +
+        k.shape([[62, 150], [70, 132], [86, 126], [84, 150], [70, 170]], { fill: brown, ink: false, edge: false, op: 0.85 }) +
+        k.shape(mirror([[62, 150], [70, 132], [86, 126], [84, 150], [70, 170]]), { fill: brown, ink: false, edge: false, op: 0.85 }) +
+        k.blob(100, 170, 26, 32, { fill: white, ink: false, edge: false }) +
+        held +
+        k.blob(69, 162, 11, 9, { fill: white }) +
+        k.blob(131, 162, 11, 9, { fill: white }) +
+        k.shape([[66, 82], [72, 60], [100, 50], [128, 60], [134, 82], [132, 106], [120, 122], [100, 128], [80, 122], [68, 106]], { fill: tan }) +
+        k.shape([[94, 54], [106, 54], [108, 80], [116, 102], [100, 124], [84, 102], [92, 80]], { fill: white, ink: false, edge: false, off: 0.5 }) +
+        k.blob(100, 109, 21, 15, { fill: white, w: 1.8 }) +
+        k.line([[86, 66], [92, 64]], { w: 1.6, op: 0.6 }) +
+        k.line([[108, 64], [114, 66]], { w: 1.6, op: 0.6 }) +
+        k.cheek(80, 104, 6) +
+        k.cheek(120, 104, 6) +
+        k.eye(85, 84, 4.6) +
+        k.eye(115, 84, 4.6) +
+        k.line([[78, 91], [85, 94], [92, 91]], { w: 1.5, op: 0.7 }) +
+        k.line([[108, 91], [115, 94], [122, 91]], { w: 1.5, op: 0.7 }) +
+        k.blob(100, 101, 8.5, 6.5, { fill: INK, ink: false, off: 0 }) +
+        `<circle cx="97" cy="99" r="2" fill="#fff" opacity=".7"/>` +
+        k.line([[100, 107], [100, 113]], { w: 1.6 }) +
+        k.line([[92, 115], [100, 113], [108, 115]], { w: 1.6 }) +
+        k.shape(ear, { fill: brown }) +
+        k.shape(mirror(ear), { fill: brown }) +
+        k.shape([[80, 124], [120, 124], [122, 132], [78, 132]], { fill: P.red, w: 2, off: 0.5 }) +
+        k.blob(100, 137, 5, 5, { fill: P.yellow, w: 1.6, gap: 0 })
+      )
+    },
+  },
+
   mouse: {
     hold: [100, 160, 56],
     draw(k, held) {
@@ -219,6 +291,15 @@ const ART: Record<FriendId, FriendArt> = {
 }
 
 export const FRIEND_IDS = Object.keys(ART) as FriendId[]
+
+const HELD = '<!--held-->'
+
+/** A friend in three layers for 3D: behind the toy, the toy's box, and the paws in front of it. */
+export function friendLayers(id: FriendId) {
+  const art = ART[id]
+  const [back, front] = art.draw(new Ink(id), HELD).split(HELD)
+  return { back, front, hold: art.hold }
+}
 
 /** A friend holding a toy (or nothing). The toy is its own <svg class="held"> so it can be hidden as it flies off. */
 export function friend(id: FriendId, toy?: ToyId, cls = '') {

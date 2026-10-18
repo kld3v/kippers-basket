@@ -33,9 +33,13 @@ function pickLetter(pool: string[], stats: Stats, recent: string[], rand: () => 
   return pool[pool.length - 1]
 }
 
-export function makeQuestion(pool: string[], choices: number, stats: Stats, recent: string[], rand = Math.random): Question {
-  const letters = pool.length ? pool : ['s', 'a', 't', 'p', 'i', 'n']
-  const letter = pickLetter(letters, stats, recent, rand)
+/**
+ * One question. The answer comes from `targets` (default: the whole pool); wrong choices
+ * come from the pool first, then the rest of the alphabet.
+ */
+export function makeQuestion(pool: string[], choices: number, stats: Stats, recent: string[], rand = Math.random, targets = pool): Question {
+  const letters = pool.length ? pool : ALL_LETTERS
+  const letter = pickLetter(targets.length ? targets : letters, stats, recent, rand)
   const { words } = LETTERS[letter]
   const ok = (l: string) => l !== letter && !clash(l, letter)
   // Distractors come from the letters she's practising first, then the rest of the alphabet.
@@ -46,4 +50,15 @@ export function makeQuestion(pool: string[], choices: number, stats: Stats, rece
     if (!distractors.some((d) => clash(d, l))) distractors.push(l)
   }
   return { letter, word: words[Math.floor(rand() * words.length)], choices: shuffle([letter, ...distractors], rand) }
+}
+
+/** A whole game's questions: different letters each time (while the pool lasts), letters she finds hard more often. */
+export function planQuestions(pool: string[], choices: number, stats: Stats, n: number, rand = Math.random): Question[] {
+  const used: string[] = []
+  return Array.from({ length: n }, () => {
+    const fresh = pool.filter((l) => !used.includes(l))
+    const q = makeQuestion(pool, choices, stats, used.slice(-2), rand, fresh.length ? fresh : pool)
+    used.push(q.letter)
+    return q
+  })
 }

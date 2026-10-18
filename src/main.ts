@@ -3,18 +3,23 @@ import './art/art.css'
 import { loadClips } from './audio/clips'
 import { sfx, unlockAudio } from './audio/sfx'
 import { speech } from './audio/speech'
-import { KIPPER_VOICE, LINES, pick } from './content'
-import { jump, wiggle } from './fx'
+import { LINES, pick } from './content'
 import { holdToOpen, openGrownups } from './grownups'
 import { Cancelled, Run } from './run'
 import { endingOnly, game, questionLoop } from './script'
 import { loadSettings, saveSettings, type Settings } from './settings'
-import { Stage } from './stage'
+import { Shell } from './shell'
+import type { Stage, StageHost } from './stages/types'
+
+type Mode = 'story' | 'meadow'
+type Script = typeof game
 
 const params = new URLSearchParams(location.search)
 let settings = loadSettings()
-const stage = new Stage(document.querySelector<HTMLElement>('#game')!)
+const shell = new Shell(document.querySelector<HTMLElement>('#game')!)
 let run: Run | null = null
+let stage: Stage | null = null
+let mode: Mode | null = null
 
 function applySettings(s: Settings) {
   settings = s
@@ -27,28 +32,63 @@ function applySettings(s: Settings) {
 speech.mode = settings.say
 speech.preferred = settings.voice
 speech.onCaption = (text) => {
-  stage.caption.textContent = text
-  stage.caption.classList.toggle('on', !!text && (settings.captions || !speech.available || params.has('captions')))
+  shell.caption.textContent = text
+  shell.caption.classList.toggle('on', !!text && (settings.captions || !speech.available || params.has('captions')))
 }
 void speech.init()
 void loadClips()
 
-function scene(name: 'title' | 'play' | 'end') {
-  stage.root.dataset.scene = name
+const host: StageHost = {
+  root: shell.scene,
+  // Kipper and Tiger answer a tap with a woof, unless someone else is talking.
+  onDogTap(who) {
+    sfx.hop()
+    if (shell.root.dataset.scene !== 'play') void speech.say(who, [pick(LINES[who].woof)])
+  },
+  onFriendTap() {
+    sfx.giggle()
+  },
 }
 
-async function start(script = game) {
+/** The 3D meadow is only downloaded when it's chosen, so the storybook starts fast. */
+async function useStage(next: Mode): Promise<Stage> {
+  if (stage && mode === next) return stage
+  stage?.dispose()
+  stage = null
+  shell.root.dataset.mode = next
+  shell.root.dataset.loading = ''
+  const s = next === 'story' ? new (await import('./stages/flat')).FlatStage(host) : await (await import('./stages/meadow')).createMeadow(host)
+  delete shell.root.dataset.loading
+  stage = s
+  mode = next
+  return s
+}
+
+async function start(next: Mode, script: Script = game) {
   run?.cancel()
   speech.stop()
   const r = (run = new Run())
-  stage.reset()
-  scene('play')
+  shell.scenePhase('play')
+  const s = await useStage(next)
+  if (r.cancelled) return
+  s.reset()
+  shell.night(false)
+  shell.hud.reset()
   try {
-    await script(r, stage, settings)
-    scene('end')
+    await script(r, shell, s, settings)
+    shell.scenePhase('end')
   } catch (e) {
     if (!(e instanceof Cancelled)) throw e
   }
+}
+
+function toTitle() {
+  run?.cancel()
+  speech.stop()
+  stage?.reset()
+  shell.night(false)
+  shell.hud.show(false)
+  shell.scenePhase('title')
 }
 
 /** Every tap that starts audio has to be a real click: iOS won't unlock sound from pointerdown. */
@@ -64,35 +104,23 @@ function fullscreen() {
   }
 }
 
-stage.playButton.addEventListener('click', () => {
+for (const [button, m] of [
+  [shell.storyButton, 'story'],
+  [shell.meadowButton, 'meadow'],
+] as const)
+  button.addEventListener('click', () => {
+    wake()
+    fullscreen()
+    void start(m)
+  })
+shell.againButton.addEventListener('click', () => {
   wake()
-  fullscreen()
-  void start()
+  void start(mode ?? 'story')
 })
-stage.againButton.addEventListener('click', () => {
-  wake()
-  void start()
-})
+shell.homeButton.addEventListener('click', toTitle)
 document.addEventListener('click', unlockAudio, true)
 
-// Tapping Kipper always does something; he only barks when nobody else is talking.
-stage.kipperSlot.addEventListener('pointerdown', () => {
-  void stage.kipperJump(0.22)
-  sfx.hop()
-  if (!window.speechSynthesis?.speaking && stage.root.dataset.scene !== 'play') void speech.say([pick(LINES.woof)], KIPPER_VOICE)
-})
-stage.actors.addEventListener('pointerdown', (e) => {
-  const bob = (e.target as Element).closest<HTMLElement>('.friend .bob')
-  if (bob) {
-    sfx.giggle()
-    void wiggle(bob)
-  }
-})
-stage.home.addEventListener('pointerdown', () => {
-  if (stage.root.dataset.scene === 'title') void jump(stage.home.querySelector('svg')!, 12)
-})
-
-holdToOpen(stage.gate, () => {
+holdToOpen(shell.gate, () => {
   speech.stop()
   openGrownups(settings, applySettings)
 })
@@ -101,14 +129,15 @@ holdToOpen(stage.gate, () => {
 for (const ev of ['gesturestart', 'contextmenu', 'dblclick']) document.addEventListener(ev, (e) => e.preventDefault())
 document.addEventListener('visibilitychange', () => document.hidden && speech.stop())
 
-scene('title')
-
+shell.scenePhase('title')
+const firstMode: Mode = params.get('mode') === 'meadow' ? 'meadow' : 'story'
 const debugScene = params.get('scene')
-if (debugScene === 'question') void start(questionLoop)
-else if (debugScene === 'ending') void start(endingOnly)
-else if (debugScene === 'play') void start()
+if (debugScene === 'question') void start(firstMode, questionLoop)
+else if (debugScene === 'ending') void start(firstMode, endingOnly)
+else if (debugScene === 'play') void start(firstMode)
+else void useStage(firstMode)
 
-if (params.has('debug')) Object.assign(window, { __kb: { stage, speech, start, get settings() { return settings } } })
+if (params.has('debug')) Object.assign(window, { __kb: { shell, speech, start, get stage() { return stage }, get settings() { return settings } } })
 
 // Offline: register the worker, then put everything this first visit already loaded into its cache.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
