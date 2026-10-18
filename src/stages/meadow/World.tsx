@@ -8,7 +8,7 @@ import type { FriendId, SpotKind, ToyId } from '../../content'
 import { InkPass, PARTICLES } from './ink'
 import { HOME, POND, SPOTS, bushSpots, fog, heightAt, pathRibbon, pond, scatter, terrain, treeSpots } from './land'
 import { buildFriend } from './models/critters'
-import { buildBiped, type DogLook } from './models/dog'
+import { buildBiped, type BipedLook } from './models/dog'
 import { bake, ball, canvasTexture, outlineMaterial, toon } from './models/kit'
 import { basket, bushPieces, cloud, flowerGeometry, grassGeometry, guideStar, hidingPlace, lilyPad, treePieces } from './models/props'
 import { buildToy } from './models/toys'
@@ -339,7 +339,7 @@ function Friends({ play, onTap }: { play: Play; onTap: () => void }) {
   )
 }
 
-function Dog({ look, body, onTap }: { look: DogLook; body: Body; onTap: () => void }) {
+function Dog({ look, body, onTap }: { look: BipedLook; body: Body; onTap: () => void }) {
   const rig = useMemo(() => buildBiped(look), [look])
   const st = useRef({ gait: 0, ear: 0, blinkUntil: 0, nextBlink: 2 })
   useFrame(({ clock }, rawDt) => {
@@ -367,7 +367,7 @@ function Dog({ look, body, onTap }: { look: DogLook; body: Body; onTap: () => vo
     s.gait += dt * (6.5 + body.speed * 2.2)
     const air = body.lift > 0.03
     const swing = Math.sin(s.gait) * 0.95 * amp
-    r.arms.forEach((a, i) => (a.rotation.z = (i ? -1 : 1) * 0.12))
+    r.arms.forEach((a, i) => (a.rotation.z = (i ? -1 : 1) * r.armOut))
     // Legs stride in turn and the arms swing against them; in the air, one knee up and both arms high.
     r.legs[0].rotation.x = air ? -0.75 : swing
     r.legs[1].rotation.x = air ? 0.35 : -swing
@@ -380,7 +380,7 @@ function Dog({ look, body, onTap }: { look: DogLook; body: Body; onTap: () => vo
     r.tail.rotation.set(sad ? 0.9 : 0, Math.sin(t * (sad ? 3 : body.face === 'happy' ? 15 : 8)) * (sad ? 0.1 : 0.6), 0)
     // Ears fly back as he runs and bounce with each stride.
     s.ear += (-amp * 0.7 + Math.cos(s.gait * 2) * 0.18 * amp + (sad ? 0.2 : 0) - s.ear) * Math.min(1, dt * 10)
-    r.ears.forEach((e) => (e.rotation.x = s.ear))
+    r.ears.forEach((e) => (e.rotation.x = s.ear * r.earFlop))
     if (t > s.nextBlink) {
       s.blinkUntil = t + 0.12
       s.nextBlink = t + 2.5 + Math.random() * 3
@@ -560,8 +560,8 @@ function Pointers({ play, compass, zzz }: { play: Play; compass: HTMLElement; zz
 
 export function World(props: {
   play: Play
-  tigerLook: DogLook
-  kipperLook: DogLook
+  tigerLook: BipedLook
+  kipperLook: BipedLook
   onDogTap(who: 'kipper' | 'tiger'): void
   onFriendTap(): void
   compass: HTMLElement

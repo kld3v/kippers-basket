@@ -9,7 +9,7 @@ import type { Run } from '../../run'
 import type { Mood, Round, Stage, StageHost } from '../types'
 import { bindInput } from './input'
 import { HOME, fog, heightAt } from './land'
-import { KIPPER_LOOK, TIGER_LOOK } from './models/dog'
+import { KIPPER_TV, TIGER_TV } from './models/dog'
 import { Play, ease } from './play'
 import { BED, World, restingAt, useWorld } from './World'
 
@@ -318,8 +318,8 @@ export async function createMeadow(host: StageHost): Promise<Stage> {
     >
       <World
         play={play}
-        kipperLook={KIPPER_LOOK}
-        tigerLook={TIGER_LOOK}
+        kipperLook={KIPPER_TV}
+        tigerLook={TIGER_TV}
         onDogTap={(who) => {
           if (who === 'kipper' && play.mode === 'explore') bark()
           else host.onDogTap(who)

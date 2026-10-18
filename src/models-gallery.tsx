@@ -5,7 +5,7 @@ import { createRoot } from 'react-dom/client'
 import * as THREE from 'three'
 import { FRIENDS, TOYS } from './content'
 import { buildFriend } from './stages/meadow/models/critters'
-import { buildBiped, buildDog, KIPPER_LOOK, NEDDY_LOOK, TIGER_LOOK } from './stages/meadow/models/dog'
+import { buildBiped, buildDog, KIPPER_TV, NEDDY_LOOK, TIGER_TV } from './stages/meadow/models/dog'
 import { bake } from './stages/meadow/models/kit'
 import { basket, bushPieces, cloud, guideStar, hidingPlace, treePieces } from './stages/meadow/models/props'
 import { buildToy } from './stages/meadow/models/toys'
@@ -16,10 +16,10 @@ const turn = { side: Math.PI / 2, front: 0, quarter: Math.PI / 5 }[params.get('v
 
 function Row() {
   const items = useMemo((): THREE.Object3D[] => {
-    if (set === 'dogs') return [buildBiped(KIPPER_LOOK).root, buildBiped(TIGER_LOOK).root, buildDog(NEDDY_LOOK).root]
+    if (set === 'dogs') return [buildBiped(KIPPER_TV).root, buildBiped(TIGER_TV).root, buildDog(NEDDY_LOOK).root]
     if (set === 'sleep') {
       const b = basket()
-      const k = buildBiped(KIPPER_LOOK)
+      const k = buildBiped(KIPPER_TV)
       k.body.rotation.set(0.32, 0, 0)
       k.body.position.set(0, -0.3, -0.05)
       k.legs.forEach((l) => (l.rotation.x = -1.45))

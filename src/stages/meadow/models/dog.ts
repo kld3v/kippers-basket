@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { P } from '../../../art/palette'
-import { ball, canvasTexture, capsule, cheek, dot, eye, INK, outlineMaterial, place, toon, tube } from './kit'
+import { bake, ball, canvasTexture, capsule, cheek, cone, dot, eye, INK, outlineMaterial, place, toon, tube } from './kit'
 
 // A dog in 3D, facing +z with feet on y=0: Kipper, Tiger and Neddy are the same build with
 // different looks. The rig exposes the joints the game animates.
@@ -138,7 +138,18 @@ export function buildDog(look: DogLook): DogRig {
   return { root, body, legs, head, ears, tail, eyes, mouth, hip }
 }
 
-/** Kipper and Tiger stand and walk on their back legs, like on TV. */
+/** Kipper and Tiger as on TV: standing up, Kipper orange with a white front, Tiger a scruffy grey Scottie. */
+export interface BipedLook {
+  kind: 'kipper' | 'tiger'
+  body: string
+  white: string
+  ear: string
+  size: number
+}
+
+export const KIPPER_TV: BipedLook = { kind: 'kipper', body: '#f2701f', white: '#fffdf8', ear: '#6e3711', size: 1 }
+export const TIGER_TV: BipedLook = { kind: 'tiger', body: '#8d877c', white: '#fbfaf6', ear: '#5c5751', size: 1.03 }
+
 export interface BipedRig {
   root: THREE.Group
   /** Bobs, leans and sways as he runs. */
@@ -151,76 +162,132 @@ export interface BipedRig {
   ears: THREE.Group[]
   tail: THREE.Group
   eyes: THREE.Group[]
+  /** How far the arms hang out from the sides (Tiger holds his out). */
+  armOut: number
+  /** How much the ears flop (Kipper's a lot, Tiger's pointed ears hardly). */
+  earFlop: number
 }
 
-export function buildBiped(look: DogLook): BipedRig {
+/** Little cones of fur standing out from a shape's surface, baked into one mesh. */
+function fuzz(color: string, centre: THREE.Vector3, radii: THREE.Vector3, count: number, keep: (d: THREE.Vector3) => boolean, size = 1) {
+  const cone = new THREE.ConeGeometry(0.045 * size, 0.13 * size, 5)
+  const up = new THREE.Vector3(0, 1, 0)
+  const pieces: { geo: THREE.BufferGeometry; color: string }[] = []
+  for (let i = 0; i < count * 3 && pieces.length < count; i++) {
+    const y = 1 - ((i + 0.5) / (count * 3)) * 2
+    const r = Math.sqrt(1 - y * y)
+    const a = i * 2.399963
+    const d = new THREE.Vector3(Math.cos(a) * r, y, Math.sin(a) * r)
+    if (!keep(d)) continue
+    const at = d.clone().multiply(radii).add(centre)
+    const g = cone.clone().applyQuaternion(new THREE.Quaternion().setFromUnitVectors(up, d)).translate(at.x, at.y, at.z)
+    pieces.push({ geo: g, color })
+  }
+  return pieces.length ? bake(pieces) : new THREE.Group()
+}
+
+export function buildBiped(look: BipedLook): BipedRig {
   const root = new THREE.Group()
   const body = new THREE.Group()
   root.add(body)
-  const chest = look.chest ?? look.body
+  const tiger = look.kind === 'tiger'
   const hip = 0.42
 
   const legs = [-1, 1].map((side) => {
     const g = new THREE.Group()
-    g.position.set(side * 0.14, hip, 0)
-    g.add(capsule(0.1, 0.24, look.body, [0, -0.2, 0]))
-    g.add(ball(0.13, chest === look.body ? look.body : chest, [0, -hip + 0.07, 0.07], [0.95, 0.6, 1.45]))
+    g.position.set(side * 0.15, hip, 0)
+    g.add(capsule(0.105, 0.22, look.body, [0, -0.18, 0]))
+    g.add(ball(0.13, look.white, [0, -hip + 0.07, 0.07], [0.95, 0.6, 1.45]))
     body.add(g)
     return g
   })
 
-  const torso = capsule(0.3, 0.34, look.body, [0, hip + 0.3, 0])
-  if (look.stripes) torso.material = toon(look.body, { map: stripeTexture(look.body, look.stripes), key: `stripes-${look.body}` })
-  body.add(torso)
-  body.add(ball(0.25, chest, [0, hip + 0.22, 0.12], [1, 1.15, 0.8], [0, 0, 0], false))
+  // A pear of a body: round at the tummy and hips, narrower at the chest.
+  body.add(ball(0.34, look.body, [0, hip + 0.22, 0], [tiger ? 1.08 : 1, 1.05, 0.92]))
+  body.add(ball(0.26, look.body, [0, hip + 0.52, 0.01], [tiger ? 1.12 : 1, 1, 0.92]))
+  if (tiger) body.add(ball(1, look.white, [0, hip + 0.31, 0.27], [0.22, 0.36, 0.13], [0, 0, 0], false))
+  else {
+    body.add(ball(1, look.white, [0, hip + 0.33, 0.26], [0.16, 0.42, 0.12], [-0.08, 0, 0], false))
+    body.add(ball(1, '#f5c779', [0, hip + 0.33, 0.24], [0.185, 0.44, 0.12], [-0.08, 0, 0], false))
+  }
+  if (tiger)
+    body.add(fuzz(look.body, new THREE.Vector3(0, hip + 0.3, 0), new THREE.Vector3(0.36, 0.42, 0.32), 26, (d) => d.z < 0.35 && Math.abs(d.y) < 0.8))
 
+  const armOut = tiger ? 0.42 : 0.1
   const arms = [-1, 1].map((side) => {
     const g = new THREE.Group()
-    g.position.set(side * 0.29, hip + 0.56, 0.04)
-    g.rotation.z = side * 0.12
-    g.add(capsule(0.075, 0.26, look.body, [0, -0.17, 0]))
-    g.add(ball(0.095, chest === look.body ? look.body : chest, [0, -0.36, 0.02]))
+    g.position.set(side * (tiger ? 0.33 : 0.3), hip + 0.6, 0.02)
+    g.add(capsule(0.078, 0.24, look.body, [0, -0.16, 0]))
+    g.add(ball(0.1, look.white, [0, -0.35, 0.02]))
     body.add(g)
     return g
   })
 
   const tail = new THREE.Group()
-  tail.position.set(0, hip + 0.1, -0.26)
-  tail.add(
-    tube(
-      [
-        [0, 0, 0.04],
-        [0, 0.08, -0.16],
-        [0, 0.28, -0.24],
-        [0, 0.44, -0.14],
-      ],
-      0.048,
-      look.stripes ?? look.body,
-    ),
-  )
-  tail.add(ball(0.05, look.body, [0, 0.44, -0.14]))
+  if (tiger) {
+    // A Scottie's short tail sticks straight up.
+    tail.position.set(0, hip + 0.26, -0.3)
+    tail.add(cone(0.075, 0.26, look.body, [0, 0.11, -0.03], [-0.45, 0, 0]))
+  } else {
+    // Kipper's thin dark wiry tail, like a little brush.
+    tail.position.set(0, hip + 0.12, -0.3)
+    tail.add(
+      tube(
+        [
+          [0, 0, 0.04],
+          [0, -0.02, -0.12],
+          [0, -0.06, -0.22],
+        ],
+        0.016,
+        '#4a3022',
+      ),
+    )
+    for (const [y, z] of [[0.02, -0.05], [-0.06, -0.02], [-0.12, -0.04]]) tail.add(cone(0.012, 0.13, '#4a3022', [0, -0.06 + y, -0.27 + z], [-Math.PI / 2 + y * 3, 0, 0], false))
+  }
   body.add(tail)
 
   const head = new THREE.Group()
-  head.position.set(0, hip + 0.66, 0.04)
+  head.position.set(0, hip + 0.78, 0.04)
   body.add(head)
-  head.add(ball(0.33, look.body, [0, 0.24, 0]))
-  head.add(ball(0.19, chest, [0, 0.13, 0.28], [1.05, 0.82, 1.18]))
-  head.add(dot(0.066, INK, [0, 0.19, 0.48], [1.1, 0.85, 0.9]))
-  const eyes = [-0.13, 0.13].map((x) => eye(0.048, [x, 0.33, 0.25]))
+  let ears: THREE.Group[]
+  let eyes: THREE.Group[]
+  if (tiger) {
+    head.add(ball(0.34, look.body, [0, 0.26, 0], [1.02, 1.05, 1.06]))
+    head.add(fuzz(look.body, new THREE.Vector3(0, 0.26, 0), new THREE.Vector3(0.35, 0.36, 0.36), 18, (d) => d.z < 0.45 && d.y > -0.4))
+    head.add(ball(0.14, look.body, [0, 0.22, 0.29]))
+    // The white beard over the lower half of his face, with tufts hanging down.
+    head.add(ball(1, look.white, [0, 0.1, 0.23], [0.26, 0.2, 0.2]))
+    head.add(fuzz(look.white, new THREE.Vector3(0, 0.06, 0.24), new THREE.Vector3(0.24, 0.2, 0.18), 12, (d) => d.y < -0.2 && d.z > -0.2, 0.9))
+    head.add(dot(0.07, INK, [0, 0.27, 0.43], [1.15, 0.85, 0.9]))
+    eyes = [-0.12, 0.12].map((x) => eye(0.042, [x, 0.4, 0.27]))
+    for (const x of [-0.12, 0.12]) head.add(cone(0.05, 0.14, look.body, [x, 0.48, 0.27], [1.1, 0, x > 0 ? -0.5 : 0.5]))
+    ears = [-1, 1].map((side) => {
+      const g = new THREE.Group()
+      g.position.set(side * 0.18, 0.56, -0.02)
+      g.rotation.z = -side * 0.22
+      g.add(cone(0.1, 0.32, look.body, [0, 0.13, 0]))
+      g.add(cone(0.055, 0.2, look.ear, [0, 0.1, 0.06], [0, 0, 0], false))
+      head.add(g)
+      return g
+    })
+  } else {
+    head.add(ball(0.32, look.body, [0, 0.27, -0.02], [0.95, 1.08, 0.98]))
+    // The big white snout with the nose on its top front, and white down his throat.
+    head.add(ball(1, look.white, [0, 0.16, 0.28], [0.18, 0.17, 0.34], [-0.2, 0, 0]))
+    head.add(ball(1, look.white, [0, 0.05, 0.12], [0.22, 0.2, 0.2], [0, 0, 0], false))
+    head.add(dot(0.068, INK, [0, 0.27, 0.6], [1.1, 0.85, 0.9]))
+    eyes = [-0.11, 0.11].map((x) => eye(0.042, [x, 0.42, 0.22]))
+    ears = [-1, 1].map((side) => {
+      const g = new THREE.Group()
+      // Long brown flaps, flopped back over the top of his head.
+      g.position.set(side * 0.1, 0.56, -0.02)
+      g.add(ball(1, look.ear, [side * 0.04, 0.03, -0.17], [0.14, 0.05, 0.29], [-0.42, side * 0.25, side * 0.42]))
+      head.add(g)
+      return g
+    })
+  }
   eyes.forEach((e) => head.add(e))
-  head.add(cheek(0.06, [-0.21, 0.14, 0.22], [0, -0.6, 0]))
-  head.add(cheek(0.06, [0.21, 0.14, 0.22], [0, 0.6, 0]))
-  if (look.stripes) for (const x of [-0.06, 0.06]) head.add(dot(0.04, look.stripes, [x, 0.53, 0.08], [0.6, 1.6, 0.6]))
-  const ears = [-1, 1].map((side) => {
-    const g = new THREE.Group()
-    g.position.set(side * 0.26, 0.44, -0.04)
-    g.rotation.z = side * 0.2
-    g.add(ball(1, look.ear, [side * 0.02, -look.earLen * 0.85, 0], [0.07, look.earLen * 1.1, 0.17]))
-    head.add(g)
-    return g
-  })
 
   root.scale.setScalar(look.size)
-  return { root, body, legs, arms, head, ears, tail, eyes }
+  return { root, body, legs, arms, head, ears, tail, eyes, armOut, earFlop: tiger ? 0.15 : 1 }
 }
