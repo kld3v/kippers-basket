@@ -123,6 +123,14 @@ export const pick = <T>(xs: readonly T[]) => xs[Math.floor(Math.random() * xs.le
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1)
 const stretch = (w: Word) => `${w.onset}-${w.onset}-${w.word}`
 
+// Short pieces the narrator's question lines are built from, so a recording of each can be stitched back in.
+const YES = 'Yes!'
+const WELL_DONE = 'Well done!'
+const LISTEN = 'Listen.'
+const WHICH_SOUND = 'Which letter makes that sound?'
+const THAT_ONE_SAYS = 'That one says'
+const TRY_AGAIN = 'Try again!'
+
 /**
  * Every line, by who says it. Each function returns the exact sentence, which is also
  * the key its recorded voice is filed under, so a line here and its MP3 always match.
@@ -137,7 +145,6 @@ export const LINES = {
       log: ['Who is hiding behind the log? Tap the log!', 'Something is behind the log! Tap it!'],
       burrow: ['Who is down that hole? Tap the hole!', 'Who lives in this hole? Tap it!'],
     } satisfies Record<SpotKind, string[]>,
-    nudge: [`Let's go and look!`, `Come on, ${DOG}!`],
     // The 3D game, where she steers Kipper herself.
     find: {
       bush: ['Who is hiding in that bush? Run over and see!', 'The bush is wiggling! Run over to it!'],
@@ -148,16 +155,17 @@ export const LINES = {
     runHome: `${DOG} has found all his toys! Run back to his basket.`,
     question: (w: Word) => `${cap(w.word)}! Which letter does ${w.word} start with?`,
     again: (w: Word) => `Which letter does ${w.word} start with?`,
-    hint: (w: Word) => `Listen. ${cap(stretch(w))}! Which letter makes that sound?`,
-    right: (w: Word) => [`Yes! ${cap(stretch(w))}!`, `Well done! ${cap(stretch(w))}!`],
-    wrong: (letter: string) => `That one says ${stretch(LETTERS[letter].words[0])}. Try again!`,
+    hint: (w: Word) => `${LISTEN} ${cap(stretch(w))}! ${WHICH_SOUND}`,
+    right: (w: Word) => [`${YES} ${cap(stretch(w))}!`, `${WELL_DONE} ${cap(stretch(w))}!`],
+    wrong: (letter: string) => `${THAT_ONE_SAYS} ${stretch(LETTERS[letter].words[0])}. ${TRY_AGAIN}`,
     // Short pieces, for stitching a grown-up's own recorded letter sounds into a line.
     word: (w: Word) => `${cap(w.word)}!`,
-    yes: 'Yes!',
-    thatOneSays: 'That one says',
-    tryAgain: 'Try again!',
+    yes: YES,
+    listen: LISTEN,
+    whichSound: WHICH_SOUND,
+    thatOneSays: THAT_ONE_SAYS,
+    tryAgain: TRY_AGAIN,
     homeTime: `${DOG} has found all his toys! Let's go home.`,
-    tapBasket: 'Tap the basket to go home!',
     hooray: `Hooray! Thank you for helping ${DOG}.`,
     bBonus: 'Ball, bone, blanket! They all start with b-b-b!',
     sleepy: `${DOG} and ${BUDDY} are very sleepy.`,
@@ -185,10 +193,10 @@ export function catalogue(): [Speaker, string][] {
   const n = LINES.narrator
   const out: [Speaker, string][] = []
   const add = (s: Speaker, ...lines: string[]) => lines.forEach((l) => out.push([s, l]))
-  add('narrator', n.missing, n.toyList, n.letsGo, ...Object.values(n.peek).flat(), ...n.nudge, ...Object.values(n.find).flat(), n.thisWay, n.runHome)
+  add('narrator', n.missing, n.toyList, n.letsGo, ...Object.values(n.peek).flat(), ...Object.values(n.find).flat(), n.thisWay, n.runHome)
   for (const w of ALL_WORDS) add('narrator', n.question(w), n.again(w), n.hint(w), ...n.right(w), n.word(w))
   for (const l of ALL_LETTERS) add('narrator', n.wrong(l))
-  add('narrator', n.yes, n.thatOneSays, n.tryAgain, n.homeTime, n.tapBasket, n.hooray, n.bBonus, n.sleepy, n.night)
+  add('narrator', n.yes, n.listen, n.whichSound, n.thatOneSays, n.tryAgain, n.homeTime, n.hooray, n.bBonus, n.sleepy, n.night)
   add('kipper', ...LINES.kipper.woof)
   add('tiger', ...LINES.tiger.start, ...LINES.tiger.cheer, ...LINES.tiger.woof)
   for (const f of FRIENDS) {
@@ -196,4 +204,102 @@ export function catalogue(): [Speaker, string][] {
     add(f.id, L.hello(f), L.help, L.bye, ...TOYS.flatMap((t) => [L.found(t.name), L.giveBack(t.name)]))
   }
   return out
+}
+
+/** One thing for a grown-up to record. Lines are stitched from these, so each only needs saying once. */
+export interface Piece {
+  /** Where the recording is filed: the letter, for a letter sound, otherwise voice|text. */
+  id: string
+  text: string
+  /** A word of help under the line, like which word a letter sound comes from. */
+  note?: string
+  /** The picture to show while a word is being recorded. */
+  picture?: string
+}
+
+export interface ScriptGroup {
+  title: string
+  who: string
+  tip: string
+  pieces: Piece[]
+}
+
+/**
+ * The game as a script to read out in your own voice, and how every line is made from it.
+ * About 130 pieces rather than 450 lines: the friends share their lines, and each word is said
+ * once with its first sound stretched ("a-a-apple!"), then stitched into its question, hint and well done.
+ */
+export function script() {
+  const n = LINES.narrator
+  const f = LINES.friend
+  const groups: ScriptGroup[] = []
+  /** speaker|line, as the game says it, to the pieces that say it, in order. */
+  const plan = new Map<string, string[]>()
+  const seen = new Set<string>()
+  const group = (title: string, who: string, tip: string) => groups.push({ title, who, tip, pieces: [] })
+  const piece = (voice: string, text: string, more: Partial<Piece> = {}) => {
+    const id = more.id ?? `${voice}|${text}`
+    if (!seen.has(id)) groups[groups.length - 1].pieces.push({ id, text, ...more })
+    seen.add(id)
+    return id
+  }
+  const says = (speaker: Speaker, line: string, ids: string[]) => plan.set(`${speaker}|${line}`, ids)
+  /** Lines recorded just as the game says them. */
+  const whole = (speaker: Speaker, ...lines: string[]) => lines.forEach((l) => says(speaker, l, [piece(speaker, l)]))
+  /** A line every friend says, recorded once for all of them. */
+  const everyFriend = (line: string) => FRIENDS.forEach((fr) => says(fr.id, line, [piece('friend', line)]))
+
+  group('The story', 'Narrator', 'You are the storyteller: warm and slow. Every game starts and ends with these.')
+  whole('narrator', n.missing, n.toyList, n.letsGo, n.homeTime, n.hooray, n.bBonus, n.sleepy, n.night)
+
+  group('Hiding places', 'Narrator', 'Said as Kipper finds each friend in the storybook game.')
+  whole('narrator', ...Object.values(n.peek).flat())
+
+  group('Friends', 'Every friend', 'All the friends share these, so pick one friendly voice for them.')
+  for (const fr of FRIENDS) says(fr.id, f.hello(fr), [piece('friend', f.hello(fr))])
+  for (const t of TOYS) everyFriend(f.found(t.name))
+  everyFriend(f.help)
+  for (const t of TOYS) everyFriend(f.giveBack(t.name))
+  everyFriend(f.bye)
+
+  group('Questions', 'Narrator', 'Short and clear. The game joins these onto the words that come next.')
+  const start = piece('narrator', 'Which letter does it start with?')
+  const [yes, wellDone, listen, which, that, again] = [YES, WELL_DONE, LISTEN, WHICH_SOUND, THAT_ONE_SAYS, TRY_AGAIN].map((t) => piece('narrator', t))
+  says('narrator', n.yes, [yes])
+  says('narrator', n.listen, [listen])
+  says('narrator', n.whichSound, [which])
+  says('narrator', n.thatOneSays, [that])
+  says('narrator', n.tryAgain, [again])
+
+  group('Words', 'Narrator', 'The first sound twice, then the word: "a-a-apple!" The sound, not the letter\'s name.')
+  const words = new Map<string, string>()
+  for (const [letter, info] of Object.entries(LETTERS))
+    for (const w of info.words) {
+      // Vowels and "qu" are spelled out for a person to read; the speech engine needs its own spellings.
+      const s = 'aeiou'.includes(letter) ? letter : w.onset.length > 1 ? w.onset : letter
+      const id = piece('narrator', `${cap(s)}-${s}-${w.word}!`, { picture: w.picture })
+      words.set(w.word, id)
+      says('narrator', n.question(w), [id, start])
+      says('narrator', n.again(w), [id, start])
+      says('narrator', n.hint(w), [listen, id, which])
+      const [right, done] = n.right(w)
+      says('narrator', right, [yes, id])
+      says('narrator', done, [wellDone, id])
+      says('narrator', n.word(w), [id])
+    }
+  for (const l of ALL_LETTERS) says('narrator', n.wrong(l), [that, words.get(LETTERS[l].words[0].word)!, again])
+
+  group('Letter sounds', 'Narrator', 'Just the sound, short and clean: "sss", not "suh" or "ess". She hears these when she gets one right.')
+  for (const l of ALL_LETTERS) piece('', l, { id: l, note: `as in ${LETTERS[l].words[0].word}` })
+
+  group('Kipper', 'Kipper', 'Have fun with it.')
+  whole('kipper', ...LINES.kipper.woof)
+
+  group('Tiger', 'Tiger', "Kipper's best friend: bouncy and keen.")
+  whole('tiger', ...LINES.tiger.start, ...LINES.tiger.cheer, ...LINES.tiger.woof)
+
+  group('3D game', 'Narrator', 'Only needed for the 3D game.')
+  whole('narrator', ...Object.values(n.find).flat(), n.thisWay, n.runHome)
+
+  return { groups, plan }
 }

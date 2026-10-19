@@ -1,15 +1,10 @@
-import { canRecord, deleteClip, hasClip, playClip, record } from './audio/clips'
+import { hasClip } from './audio/clips'
 import { unlockAudio } from './audio/sfx'
 import { speech } from './audio/speech'
-import { ALL_LETTERS, LETTERS, PRESETS } from './content'
+import { ALL_LETTERS, LETTERS, PRESETS, script } from './content'
+import { h, keepWhole } from './dom'
 import { clearStats, loadStats, type Settings } from './settings'
-
-const h = <K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', text = '') => {
-  const el = document.createElement(tag)
-  if (cls) el.className = cls
-  if (text) el.textContent = text
-  return el
-}
+import { openStudio } from './studio'
 
 function segmented<T extends string | number>(options: [T, string][], value: T, onPick: (v: T) => void) {
   const wrap = h('div', 'seg')
@@ -23,6 +18,12 @@ function segmented<T extends string | number>(options: [T, string][], value: T, 
     wrap.append(b)
   }
   return wrap
+}
+
+function note(text: string) {
+  const p = h('p', 'note')
+  p.append(...keepWhole(text))
+  return p
 }
 
 function section(title: string, ...children: (Node | string)[]) {
@@ -97,54 +98,19 @@ export function openGrownups(settings: Settings, apply: (s: Settings) => void) {
   const voiceRow = h('div', 'inline')
   voiceRow.append(voice, test)
 
-  // Recordings
-  const recs = h('div', 'recs')
-  if (!canRecord()) {
-    recs.append(h('p', 'note', 'Recording needs the game opened over https (for example the Netlify link), not a plain http address.'))
-  } else {
-    for (const l of ALL_LETTERS) {
-      const row = h('div', 'rec')
-      const rec = h('button', 'small rec-btn', 'Record')
-      const play = h('button', 'small', 'Play')
-      const del = h('button', 'small quiet', 'Clear')
-      ;[rec, play, del].forEach((b) => (b.type = 'button'))
-      const sync = () => {
-        play.disabled = del.disabled = !hasClip(l)
-        row.classList.toggle('has', hasClip(l))
-      }
-      let stop: (() => void) | null = null
-      rec.addEventListener('click', async () => {
-        if (stop) return stop()
-        unlockAudio()
-        try {
-          const r = await record(l)
-          stop = r.stop
-          rec.textContent = 'Stop'
-          rec.classList.add('live')
-          await r.done
-          await playClip(l)
-        } catch {
-          rec.textContent = 'No mic'
-        } finally {
-          stop = null
-          rec.classList.remove('live')
-          if (rec.textContent === 'Stop') rec.textContent = 'Record'
-          sync()
-        }
-      })
-      play.addEventListener('click', () => {
-        unlockAudio()
-        void playClip(l)
-      })
-      del.addEventListener('click', async () => {
-        await deleteClip(l)
-        sync()
-      })
-      sync()
-      row.append(h('b', '', l), h('span', '', LETTERS[l].words[0].word), rec, play, del)
-      recs.append(row)
-    }
+  // Your voice
+  const pieces = script().groups.flatMap((g) => g.pieces)
+  const mine = h('p', 'note')
+  const tally = () => {
+    const n = pieces.filter((p) => hasClip(p.id)).length
+    mine.textContent = n
+      ? `${n} of ${pieces.length} recorded. Anything you haven't done yet uses the game's own voices.`
+      : `Read the game's script out loud, ${pieces.length} short lines, and it speaks in your voice instead.`
   }
+  tally()
+  const openScript = h('button', '', 'Open the script')
+  openScript.type = 'button'
+  openScript.addEventListener('click', () => openStudio(tally))
 
   // Progress
   const stats = loadStats()
@@ -182,10 +148,10 @@ export function openGrownups(settings: Settings, apply: (s: Settings) => void) {
     section(
       'Say the letter',
       segmented([['sounds', 'Sounds (phonics)'], ['names', 'Names']], s.say, (v) => ((s.say = v), commit())),
-      h('p', 'note', 'No voice can say a pure "sss" on its own, so the narrator stretches the word instead ("s-s-sun"). Record your own sounds below and the game uses yours.'),
+      note('No speech engine can say a pure "sss" on its own, so the narrator stretches the word instead ("s-s-sun"). Record the script below and the game uses your sounds.'),
     ),
+    section('Your voice', mine, openScript),
     section('Back-up voice', h('p', 'note', 'Used for any line without a recorded voice.'), voiceRow, captions),
-    section('Your voice for each sound', h('p', 'note', 'Tap Record and say the sound once, like "sss" or "ih". It stops by itself.'), recs),
     section('Right first time', prog, resetStats),
   )
   document.body.append(d)
@@ -209,5 +175,10 @@ export function holdToOpen(btn: HTMLElement, open: () => void, ms = 1200) {
     }, ms)
   })
   for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) btn.addEventListener(ev, cancel)
-  btn.addEventListener('keydown', (e) => e.key === 'Enter' && open())
+  btn.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return
+    // Otherwise the same key press goes on to click whatever the new dialog focuses: its Done button.
+    e.preventDefault()
+    open()
+  })
 }

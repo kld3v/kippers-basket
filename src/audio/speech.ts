@@ -1,15 +1,18 @@
-import { FRIENDS, LETTERS, STYLES, type Speaker, type VoiceStyle } from '../content'
+import { FRIENDS, LETTERS, STYLES, script, type Speaker, type VoiceStyle } from '../content'
 import manifest from '../voice-manifest.json'
 import { SPEED } from '../run'
-import { hasClip, playClip, stopClip } from './clips'
+import { getClip, hasClip } from './clips'
 import { audio } from './sfx'
 
 /** A piece of a line: a sentence, a letter's sound or name, or a pause. */
 export type Part = string | { sound: string } | { name: string } | { pause: number }
 
-type Segment = { text: string } | { voice: string; text: string } | { rec: string } | { pause: number }
+type Segment = { tts: string } | { voice: string; text: string } | { own: string; text: string } | { pause: number }
 
 const recorded = manifest as Record<string, string>
+// How each line is stitched from a grown-up's own recordings, and what each piece says.
+const { groups, plan } = script()
+const said = new Map(groups.flatMap((g) => g.pieces.map((p) => [p.id, p.text] as const)))
 const synth = 'speechSynthesis' in window ? window.speechSynthesis : null
 
 // Browser voices, best first, for anything without a recording. Anything en-GB beats anything else.
@@ -39,6 +42,7 @@ class Speech {
   private buffers = new Map<string, Promise<AudioBuffer | null>>()
   private source: AudioBufferSourceNode | null = null
   private bus: GainNode | null = null
+  private limiter: DynamicsCompressorNode | null = null
 
   /** True when there is some way to be heard: recordings, or a browser voice. */
   get available() {
@@ -70,15 +74,13 @@ class Speech {
     synth.speak(u)
   }
 
-  has(speaker: Speaker, text: string) {
-    return `${speaker}|${text}` in recorded
-  }
-
-  /** Start downloading lines that are about to be needed, so they play without a gap. */
+  /** Start fetching (or decoding) lines that are about to be needed, so they play without a gap. */
   prefetch(speaker: Speaker, texts: string[]) {
     for (const t of texts) {
+      const pieces = plan.get(`${speaker}|${t}`)
       const id = recorded[`${speaker}|${t}`]
-      if (id) void this.load(id)
+      if (pieces?.every(hasClip)) pieces.forEach((p) => void getClip(p))
+      else if (id) void this.load(id)
     }
   }
 
@@ -100,7 +102,6 @@ class Speech {
   stop() {
     this.token++
     synth?.cancel()
-    stopClip()
     try {
       this.source?.stop()
     } catch {
@@ -111,12 +112,33 @@ class Speech {
     this.onCaption('')
   }
 
+  /** The whole call in the grown-up's own voice, when every piece of it has been recorded. */
+  private own(speaker: Speaker, parts: Part[]): Segment[] | null {
+    const out: Segment[] = []
+    for (const p of parts) {
+      if (typeof p === 'string') {
+        const pieces = plan.get(`${speaker}|${p}`)
+        if (!pieces?.every(hasClip)) return null
+        for (const [i, id] of pieces.entries()) {
+          if (i) out.push({ pause: 120 })
+          out.push({ own: id, text: said.get(id)! })
+        }
+      } else if ('pause' in p) out.push(p)
+      else if ('sound' in p && this.mode === 'sounds' && hasClip(p.sound)) out.push({ own: p.sound, text: LETTERS[p.sound].sound })
+      else return null
+    }
+    return out
+  }
+
+  // A line never mixes voices: all the grown-up's, or else recorded clips and speech as before.
   private segments(speaker: Speaker, parts: Part[]): Segment[] {
+    const mine = this.own(speaker, parts)
+    if (mine) return mine
     const out: Segment[] = []
     const text = (t: string) => {
       const last = out[out.length - 1]
-      if (last && 'text' in last && !('voice' in last)) last.text += ' ' + t
-      else out.push({ text: t })
+      if (last && 'tts' in last) last.tts += ' ' + t
+      else out.push({ tts: t })
     }
     for (const p of parts) {
       if (typeof p === 'string') {
@@ -126,7 +148,7 @@ class Speech {
       } else if ('pause' in p) out.push({ pause: p.pause })
       else if ('name' in p) text(LETTERS[p.name].name)
       else if (this.mode === 'names') text(LETTERS[p.sound].name)
-      else if (hasClip(p.sound)) out.push({ rec: p.sound })
+      else if (hasClip(p.sound)) out.push({ own: p.sound, text: LETTERS[p.sound].sound })
       else text(LETTERS[p.sound].sound)
     }
     return out
@@ -139,15 +161,28 @@ class Speech {
       synth.cancel()
       await new Promise((r) => setTimeout(r, 60)) // Chrome drops an utterance queued in the same tick as cancel()
     }
-    stopClip()
+    // A new line cuts off a clip still playing, rather than talking over it.
+    try {
+      this.source?.stop()
+    } catch {
+      // already finished
+    }
     for (const seg of this.segments(speaker, parts)) {
       if (my !== this.token) return false
       if ('voice' in seg) await this.play(seg.voice, seg.text, speaker)
-      else if ('text' in seg) await this.utter(seg.text, styleOf(speaker))
-      else if ('rec' in seg) await playClip(seg.rec)
+      else if ('own' in seg) await this.playOwn(seg.own, seg.text, speaker)
+      else if ('tts' in seg) await this.utter(seg.tts, styleOf(speaker))
       else await new Promise((r) => setTimeout(r, seg.pause * SPEED))
     }
     if (my === this.token) this.onCaption('')
+    return my === this.token
+  }
+
+  /** Play one of the grown-up's recordings by itself. Resolves true if it played to the end. */
+  async clip(key: string) {
+    this.stop()
+    const my = this.token
+    await this.playOwn(key, '', 'narrator')
     return my === this.token
   }
 
@@ -157,18 +192,31 @@ class Speech {
     const buffer = await this.load(id)
     if (my !== this.token) return
     if (!buffer || SPEED < 1) return buffer ? undefined : this.utter(text, styleOf(speaker))
+    await this.out(buffer, this.mix())
+  }
+
+  private async playOwn(key: string, text: string, speaker: Speaker) {
+    const my = this.token
+    this.onCaption(text)
+    const clip = await getClip(key)
+    if (my !== this.token) return
+    if (!clip) return text ? this.utter(text, styleOf(speaker)) : undefined
+    if (SPEED < 1) return
+    await this.out(clip.buffer, this.lifted(), clip.gain, clip.start, clip.end - clip.start)
+  }
+
+  /** Play a buffer, or part of one, until it ends or something cuts in. */
+  private out(buffer: AudioBuffer, to: AudioNode, gain = 1, offset = 0, duration = buffer.duration) {
     const c = audio()
     if (c.state !== 'running') void c.resume()
-    if (!this.bus) {
-      this.bus = c.createGain()
-      this.bus.connect(c.destination)
-    }
-    await new Promise<void>((resolve) => {
+    return new Promise<void>((resolve) => {
       const src = c.createBufferSource()
       src.buffer = buffer
-      src.connect(this.bus!)
+      const level = c.createGain()
+      level.gain.value = gain
+      src.connect(level).connect(to)
       // If iOS has suspended audio (after switching apps) the clip never ends, so don't wait for it forever.
-      const timer = setTimeout(() => finish(), buffer.duration * 1000 + 1200)
+      const timer = setTimeout(() => finish(), duration * 1000 + 1200)
       const finish = () => {
         clearTimeout(timer)
         this.finishers.delete(finish)
@@ -177,8 +225,34 @@ class Speech {
       src.onended = finish
       this.finishers.add(finish)
       this.source = src
-      src.start()
+      src.start(0, offset, duration)
     })
+  }
+
+  private mix() {
+    if (!this.bus) {
+      this.bus = audio().createGain()
+      this.bus.connect(audio().destination)
+    }
+    return this.bus
+  }
+
+  /**
+   * A grown-up's recordings are lifted to the level of the recorded voices, through a limiter so
+   * a close "b-b-banana" can't clip. Its automatic makeup gain adds about 1.7dB on top.
+   */
+  private lifted() {
+    if (!this.limiter) {
+      const l = audio().createDynamicsCompressor()
+      l.threshold.value = -3
+      l.knee.value = 0
+      l.ratio.value = 20
+      l.attack.value = 0.002
+      l.release.value = 0.15
+      l.connect(this.mix())
+      this.limiter = l
+    }
+    return this.limiter
   }
 
   private utter(text: string, style: VoiceStyle) {

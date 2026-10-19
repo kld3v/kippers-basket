@@ -63,7 +63,11 @@ export function ask(run: Run, root: HTMLElement, q: Question, settings: Settings
     ask: (): Part[] => [N.question(q.word)],
     again: (): Part[] => [N.again(q.word)],
     hint: (): Part[] =>
-      names ? [N.again(q.word)] : own(q.letter) ? [N.again(q.word), { pause: 200 }, sound, { pause: 150 }, sound, N.word(q.word)] : [N.hint(q.word)],
+      names
+        ? [N.again(q.word)]
+        : own(q.letter)
+          ? [N.listen, sound, { pause: 150 }, sound, { pause: 150 }, N.word(q.word), N.whichSound]
+          : [N.hint(q.word)],
     right: (): Part[] =>
       names
         ? [N.yes, `${cap(word)} starts with`, { name: q.letter }, '!']
